@@ -181,6 +181,40 @@
   }
 }
 
+/* Fit mode: on a laptop-sized window the workspace page is exactly one screen. The grid's rows
+   share whatever height the top bar, session strip and dock leave, and tiles scroll inside
+   themselves. Shorter windows and the other pages keep the normal scrolling page. */
+@media (width >= 64rem) and (height >= 40rem) {
+  body:has(.ws-fit) {
+    overflow: hidden;
+  }
+  body:has(.ws-fit) :is(.app-shell, .app-inner) {
+    height: 100dvh;
+    min-height: 0;
+  }
+  body:has(.ws-fit) .app-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: 0.75rem;
+  }
+  .ws-fit {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .ws-fit > .workspace {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: repeat(var(--rows, 12), minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
+  }
+  .ws-fit > .workspace > .tile-focus {
+    grid-row: span 1 / span 1;
+  }
+}
+
 /* Entrance choreography, once per session (AppShell sets html[data-booted] a few seconds
    after load, so later visits to the workspace don't replay it): the art draws in first
    (Slipstream), then the top bar, the session strip, the tiles one after another, the dock.

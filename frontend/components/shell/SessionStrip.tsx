@@ -58,7 +58,7 @@ export function SessionStrip({ state, actions }: { state: TimingState; actions?:
   return (
     <section
       aria-label="Session"
-      className={`boot-strip flex flex-wrap items-center gap-x-8 gap-y-2 rounded-panel px-1 py-3 ${loud ? `px-4 ${TONE_FRAME[ts.tone] ?? ""}` : ""}`}
+      className={`boot-strip flex flex-wrap items-center gap-x-6 gap-y-2 rounded-panel px-1 py-3 lg:py-2 ${loud ? `px-4 ${TONE_FRAME[ts.tone] ?? ""}` : ""}`}
     >
       <div className="min-w-0 max-w-full">
         <h1 className="truncate text-title font-bold leading-tight">{meeting}</h1>
@@ -88,14 +88,14 @@ export function SessionStrip({ state, actions }: { state: TimingState; actions?:
       {weatherText && <p className="num hidden text-small text-muted md:block">{weatherText}</p>}
 
       {latest?.Message && (
-        <p className="hidden min-w-0 max-w-[30ch] truncate text-small text-faint xl:block" title={sentence(latest.Message)}>
+        <p className="hidden min-w-0 max-w-[30ch] truncate text-small text-faint 2xl:block" title={sentence(latest.Message)}>
           {latest.Lap != null && <span className="num mr-1.5">L{latest.Lap}</span>}
           {sentence(latest.Message)}
         </p>
       )}
 
       {podium.length > 0 && (
-        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-small">
+        <p className="hidden flex-wrap items-center gap-x-4 gap-y-1 text-small 2xl:flex">
           <span className="font-semibold text-muted">Podium</span>
           {podium.map((r) => (
             <span key={r.num} className="inline-flex items-center gap-1.5">

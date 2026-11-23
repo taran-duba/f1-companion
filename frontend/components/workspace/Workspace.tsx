@@ -11,7 +11,7 @@
  * FORM: operate-mode workspace (tiling panes), after trading-desk and DAW layouts.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { LoadingState } from "@/components/LoadingState";
 import { SessionStrip } from "@/components/shell/SessionStrip";
 import { useSelection } from "@/lib/selection";
@@ -25,6 +25,12 @@ import { WidgetBody } from "./WidgetBody";
 
 const BTN =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-chip border border-line-control px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised lg:min-h-9";
+
+/** Rows a layout needs on the 12-column grid: its area, or its tallest tile if that is more. */
+function gridRows(tiles: { w: number; h: number }[]): number {
+  const area = tiles.reduce((n, t) => n + t.w * t.h, 0);
+  return Math.max(Math.ceil(area / 12), ...tiles.map((t) => t.h));
+}
 
 export function Workspace() {
   const { state, status } = useStream();
@@ -66,7 +72,7 @@ export function Workspace() {
   const noSource = status?.source.kind === "none";
 
   return (
-    <div className="pt-0">
+    <div className="ws-fit pt-0">
       <SessionStrip
         state={state}
         actions={
@@ -163,7 +169,7 @@ export function Workspace() {
           </button>
         </div>
       ) : (
-        <div key={focused ? `focus-${focused.id}` : layout.id} className="workspace mt-3 grid grid-cols-1 gap-3 animate-fade-in">
+        <div key={focused ? `focus-${focused.id}` : layout.id} style={{ "--rows": focused ? 1 : gridRows(tiles) } as CSSProperties} className="workspace mt-3 grid grid-cols-1 gap-3 animate-fade-in">
           {tiles.map((t, i) => {
             const num = resolveDriver(t.driver, rows, selected);
             return (

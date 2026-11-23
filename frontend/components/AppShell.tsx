@@ -25,9 +25,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(id);
   }, []);
   return (
-    <div className="relative flex min-h-dvh flex-col">
+    <div className="app-shell relative flex min-h-dvh flex-col">
       <Slipstream />
-      <div className="relative z-10 flex min-h-dvh flex-1 flex-col">
+      <div className="app-inner relative z-10 flex min-h-dvh flex-1 flex-col">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-chip focus:bg-accent focus:px-3 focus:py-2 focus:font-semibold focus:text-bg"
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </a>
         <FlagBand tone={status?.tone ?? "unknown"} label={status?.label ?? "Track status unknown"} />
         <TopBar />
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1800px] flex-1 px-4 pb-8 outline-none lg:px-6">
+        <main id="main" tabIndex={-1} className="app-main mx-auto w-full max-w-[1800px] flex-1 px-4 pb-8 outline-none lg:px-6">
           {children}
         </main>
         <PlaybackDock />
