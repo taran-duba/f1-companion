@@ -126,9 +126,14 @@ class Hub:
             self._task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self._task
+        self.close_clients()
+
+    def close_clients(self) -> None:
+        """End every open SSE stream (each client then reconnects with backoff)."""
         for q in list(self.clients):
-            with contextlib.suppress(asyncio.QueueFull):
-                q.put_nowait(None)
+            while not q.empty():
+                q.get_nowait()
+            q.put_nowait(None)
 
 
 # -- request models ----------------------------------------------------------

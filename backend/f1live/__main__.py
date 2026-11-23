@@ -27,7 +27,19 @@ def main() -> None:
 
         from .server import create_app
 
-        uvicorn.run(create_app(args.source), host=args.host, port=args.port, log_level=args.log_level)
+        app = create_app(args.source)
+
+        class Server(uvicorn.Server):
+            # SSE streams never end on their own, so a graceful shutdown (Ctrl+C,
+            # SIGTERM) would wait forever while any browser is open. Close them
+            # first; the timeout is a fallback.
+            def handle_exit(self, sig, frame):  # type: ignore[override]
+                app.state.hub.close_clients()
+                super().handle_exit(sig, frame)
+
+        config = uvicorn.Config(app, host=args.host, port=args.port, log_level=args.log_level,
+                                timeout_graceful_shutdown=3)
+        Server(config).run()
 
 
 if __name__ == "__main__":

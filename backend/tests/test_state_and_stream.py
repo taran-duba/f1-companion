@@ -109,3 +109,14 @@ def test_second_client_does_not_steal_first_clients_patch():
     assert [b["changes"]["LapCount"] for k, b in _events(q1) if k == "patch"] == [{"CurrentLap": 2}]
     snap2 = [b for k, b in _events(q2) if k == "snapshot"][0]
     assert snap2["state"]["LapCount"]["CurrentLap"] == 2
+
+
+def test_close_clients_ends_every_stream_promptly():
+    """Shutdown must not wait on SSE streams: each queue gets an end marker
+    immediately, even if it had a backlog."""
+    store = StateStore()
+    hub = Hub(store, _Mgr())
+    queues = [hub.register() for _ in range(3)]
+    hub.close_clients()
+    for q in queues:
+        assert q.qsize() == 1 and q.get_nowait() is None
