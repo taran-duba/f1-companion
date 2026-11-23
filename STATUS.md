@@ -26,8 +26,15 @@ _Last updated: 2026-11-23 ~04:30 (in progress — overnight run). Note: the run 
 - Fixed after review: phone overflow on the live page (grid column min width), pit-in laps
   showing the new compound, partial laps saved as "best" telemetry trace after a seek.
 
+- Design Step C: impeccable critique (dual-agent, 26/40, snapshot in `.impeccable/critique/`).
+  All P0–P2 findings fixed: race control moved to the top of the right column, phone ticker,
+  sticky tabs, selected-driver bar, quiet green / loud abnormal flag frame, battles only when
+  racing, neutral last-lap colour, compact live telemetry, 12px glyph minimum, a11y names.
+- Real live feed checked end-to-end (DECISIONS.md D7): works without a token for timing;
+  found and fixed a tower overflow that only real data triggered.
+
 ## In progress
-- Design Step C: impeccable critique (dual-agent), then fixes, then impeccable polish.
+- Design Step C: impeccable polish (3 area agents + verifier).
 
 ## Tooling notes
 - `web-design-guidelines` skill: **not installed**. Step D will be done manually against
