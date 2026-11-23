@@ -99,6 +99,11 @@ class _DriverTrack:
     best_trace: dict | None = None
     best_ms: int | None = None
     telemetry: deque = field(default_factory=lambda: deque())
+    # Stint in use when the current lap started (a pit-in lap ends on new tyres).
+    lap_stint: dict | None = None
+    # True only if every sample of the current lap was recorded (not joined
+    # mid-lap, no skipped samples during a replay fast-forward).
+    trace_clean: bool = False
 
 
 class Derived:
@@ -195,7 +200,8 @@ class Derived:
         last = line.get("LastLapTime") or {}
         lap_ms = parse_laptime(last.get("Value"))
         stints = as_list(app.get("Stints"))
-        stint = stints[-1] if stints else {}
+        current = stints[-1] if stints else {}
+        stint = d.lap_stint if (d.lap_had_pit and d.lap_stint) else current
         gap = parse_gap(line.get("GapToLeader"))
         interval = parse_gap(line.get("IntervalToPositionAhead"))
         pos = line.get("Position")
@@ -218,7 +224,7 @@ class Derived:
             "overallBest": bool(last.get("OverallFastest")),
         }
         # Lap telemetry trace bookkeeping
-        if d.trace:
+        if d.trace and d.trace_clean:
             trace = {"lap": lap_no, "ms": lap_ms, "points": _downsample(d.trace, TRACE_MAX_POINTS)}
             if not (d.lap_had_pit or d.lap_pit_out):
                 d.last_trace = trace
@@ -226,6 +232,8 @@ class Derived:
                     d.best_ms = lap_ms
                     d.best_trace = trace
         d.trace = []
+        d.trace_clean = True
+        d.lap_stint = dict(current) if isinstance(current, dict) else None
         d.dist = 0.0
         d.sectors = [None, None, None]
         d.lap_had_pit = False
@@ -257,6 +265,8 @@ class Derived:
                     continue
                 vals = car_channels(chans)
                 latest[num] = vals
+                if not keep_samples:
+                    self._drv(num).trace_clean = False
                 if keep_samples and ts is not None:
                     self._sample(num, ts, vals)
         if not latest:
