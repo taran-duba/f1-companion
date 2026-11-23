@@ -15,18 +15,18 @@ interface Props {
 }
 
 /**
- * Columns hide progressively (DESIGN_SYSTEM data-density rule 3):
- * always: pos, driver, interval, last lap, tyre
- * ≥ sm(390): + pits hidden, gap hidden
- * ≥ md(768): + gap, best, pits
- * ≥ xl(1280): + sectors
+ * Columns hide progressively (DESIGN_SYSTEM data-density rule 3), driven by
+ * the tower's own width (container queries), not the viewport: the tower
+ * shares the screen with other panels, so viewport breakpoints lie.
+ * always: pos, driver, interval, last lap, tyre (fits 328px)
+ * ≥ 440px: + gap · ≥ 560px: + best, pits · ≥ 790px: + sectors
  */
 const COL = {
-  gap: "hidden md:table-cell",
-  best: "hidden md:table-cell",
-  sectors: "hidden xl:table-cell",
-  pits: "hidden md:table-cell",
-  age: "hidden sm:inline",
+  gap: "hidden @min-[440px]:table-cell",
+  best: "hidden @min-[560px]:table-cell",
+  sectors: "hidden @min-[790px]:table-cell",
+  pits: "hidden @min-[560px]:table-cell",
+  age: "hidden @min-[360px]:inline",
 };
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {
@@ -44,7 +44,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
 
   const c = (cls: string) => (compact ? "hidden" : cls);
   return (
-    <div className="overflow-x-auto">
+    <div className="@container overflow-x-auto">
       <table className="w-full border-collapse text-body lg:text-row">
         <caption className="sr-only">
           Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry.
@@ -147,9 +147,16 @@ const Row = memo(function Row({
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>
-          {r.inPit && <Chip tone="warn">PIT</Chip>}
-          {r.pitOut && !r.inPit && <Chip tone="muted">OUT LAP</Chip>}
-          {out && <Chip tone="danger">{r.retired ? "DNF" : "STOP"}</Chip>}
+          {/* One status chip, most important first, so the driver column stays narrow. */}
+          {out ? (
+            <Chip tone="danger">{r.retired ? "DNF" : "STOP"}</Chip>
+          ) : r.inPit ? (
+            <Chip tone="warn">PIT</Chip>
+          ) : r.pitOut ? (
+            <Chip tone="muted" title="Out lap">
+              OUT
+            </Chip>
+          ) : null}
         </button>
       </th>
       <td className="num pr-2 lg:pr-3 text-right">
