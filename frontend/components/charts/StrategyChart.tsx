@@ -113,7 +113,7 @@ export function StrategyChart({ state, onSelect, selected }: Props) {
           .map((c) => (
             <span key={c} className="inline-flex items-center gap-1.5">
               <span
-                className="inline-flex h-4 w-5 items-center justify-center rounded-[3px] text-[11px] font-bold"
+                className="inline-flex h-4 w-5 items-center justify-center rounded-[3px] text-micro font-bold"
                 style={{
                   border: `1.5px solid ${COMPOUND_STYLE[c].colour}`,
                   color: COMPOUND_STYLE[c].colour,
@@ -189,7 +189,7 @@ function StrategyBarRow({
         className={`${selected ? "fill-raised" : interactive ? "fill-transparent group-hover:fill-raised" : "fill-transparent"} stroke-transparent group-focus-visible:stroke-accent`}
       />
       {selected && <rect x={0} y={y + 1} width={2} height={rowH - 2} className="fill-accent" />}
-      {/* Retired cars are dimmed; the "Out" word below stays full strength. */}
+      {/* Retired cars are dimmed; the "DNF" word below stays full strength. */}
       <g opacity={dim}>
         <text x={20} y={cy} dy="0.35em" textAnchor="end" className="num fill-faint text-micro">
           {row.position < 99 ? row.position : ""}
@@ -206,6 +206,7 @@ function StrategyBarRow({
             const cx0 = x(s.start - 1) + 3;
             return (
               <g key={s.index}>
+                <title>{`${style.name}, fitted on lap ${s.start}`}</title>
                 <rect
                   x={cx0}
                   y={by + 0.75}
@@ -225,9 +226,12 @@ function StrategyBarRow({
           const x0 = x(s.start - 1) + (s.index > 0 ? 1.5 : 0);
           const x1 = x(s.end) - (s.current ? 0 : 1.5);
           const w = Math.max(1, x1 - x0);
-          const label = w >= 46 ? `${style.letter} ${s.laps}` : w >= 13 ? style.letter : "";
+          // Text is 12px minimum: the lap count needs ~46px with its letter, the letter alone ~14px.
+          // Narrower stints drop the text (no tiny glyphs); the tooltip and the table below carry it.
+          const label = w >= 46 ? `${style.letter} ${s.laps}` : w >= 14 ? style.letter : "";
           return (
             <g key={s.index}>
+              <title>{`${style.name}, laps ${s.start}–${s.end} (${s.laps} lap${s.laps === 1 ? "" : "s"})`}</title>
               <rect x={x0} y={by} width={w} height={barH} rx={2} fill={style.colour} fillOpacity={0.22} />
               <path
                 d={
@@ -277,7 +281,7 @@ function StrategyBarRow({
           dy="0.35em"
           className="fill-danger text-micro font-bold"
         >
-          Out
+          DNF
         </text>
       )}
     </g>

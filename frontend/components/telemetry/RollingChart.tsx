@@ -3,6 +3,7 @@ import { areaPath, linePath, SPEED_MAX, summarise, visible, type TelSample } fro
 const W = 300;
 const H = 100;
 const SPEED_TICKS = [300, 200, 100, 0];
+const SPEED_TICKS_COMPACT = [300, 150, 0];
 
 function xTicks(windowMs: number): number[] {
   const secs = windowMs / 1000;
@@ -21,11 +22,11 @@ function VGrid({ windowMs }: { windowMs: number }) {
   );
 }
 
-function Band({ label, samples, windowMs, ch, colour }: { label: string; samples: TelSample[]; windowMs: number; ch: "throttle" | "brake"; colour: string }) {
+function Band({ label, samples, windowMs, ch, colour, compact }: { label: string; samples: TelSample[]; windowMs: number; ch: "throttle" | "brake"; colour: string; compact: boolean }) {
   return (
     <>
       <span className="self-center text-micro text-muted">{label}</span>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className="block h-7 w-full rounded-chip bg-raised/60">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className={`block w-full rounded-chip bg-raised/60 ${compact ? "h-4" : "h-7"}`}>
         <VGrid windowMs={windowMs} />
         <path d={areaPath(samples, ch, windowMs, W, H, 100)} fill={colour} fillOpacity={0.35} />
         <path d={linePath(samples, ch, windowMs, W, H, 100)} fill="none" stroke={colour} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
@@ -37,17 +38,32 @@ function Band({ label, samples, windowMs, ch, colour }: { label: string; samples
 /**
  * Rolling speed line with throttle and brake bands under it. Hand-rolled SVG,
  * no animation; the x axis is anchored to the newest sample so the chart
- * stops when the feed (or the replay) stops.
+ * stops when the feed (or the replay) stops. `compact` is the live-dashboard size
+ * (about 120px tall, no unit label: the readout above it carries km/h).
  */
-export function RollingChart({ samples, windowMs, colour, code }: { samples: TelSample[]; windowMs: number; colour: string; code: string }) {
+export function RollingChart({
+  samples,
+  windowMs,
+  colour,
+  code,
+  compact = false,
+}: {
+  samples: TelSample[];
+  windowMs: number;
+  colour: string;
+  code: string;
+  compact?: boolean;
+}) {
   const shown = visible(samples, windowMs);
   const summary = summarise(shown, windowMs, code);
+  const ticks = compact ? SPEED_TICKS_COMPACT : SPEED_TICKS;
+  const speedH = compact ? "h-16" : "h-36";
   return (
     <figure className="m-0">
       <figcaption className="sr-only">{summary}</figcaption>
-      <div className="grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-2 gap-y-1.5">
-        <div className="relative h-36 text-right" aria-hidden="true">
-          {SPEED_TICKS.map((v) => (
+      <div className={`grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-2 ${compact ? "gap-y-1" : "gap-y-1.5"}`}>
+        <div className={`relative text-right ${speedH}`} aria-hidden="true">
+          {ticks.map((v) => (
             <span
               key={v}
               className="num absolute right-0 -translate-y-1/2 text-micro font-normal text-faint"
@@ -56,10 +72,10 @@ export function RollingChart({ samples, windowMs, colour, code }: { samples: Tel
               {v}
             </span>
           ))}
-          <span className="absolute right-0 top-0 -translate-y-1 text-micro font-normal text-faint">km/h</span>
+          {!compact && <span className="absolute right-0 top-0 -translate-y-1 text-micro font-normal text-faint">km/h</span>}
         </div>
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className="block h-36 w-full overflow-hidden">
-          {SPEED_TICKS.map((v) => {
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className={`block w-full overflow-hidden ${speedH}`}>
+          {ticks.map((v) => {
             const y = H - (v / SPEED_MAX) * H;
             return <line key={v} x1={0} x2={W} y1={y} y2={y} stroke="var(--color-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />;
           })}
@@ -74,8 +90,8 @@ export function RollingChart({ samples, windowMs, colour, code }: { samples: Tel
           />
         </svg>
 
-        <Band label="Throttle" samples={shown} windowMs={windowMs} ch="throttle" colour="var(--color-ok)" />
-        <Band label="Brake" samples={shown} windowMs={windowMs} ch="brake" colour="var(--color-danger)" />
+        <Band label="Throttle" samples={shown} windowMs={windowMs} ch="throttle" colour="var(--color-ok)" compact={compact} />
+        <Band label="Brake" samples={shown} windowMs={windowMs} ch="brake" colour="var(--color-danger)" compact={compact} />
 
         <span />
         <div aria-hidden="true" className="num relative h-4 text-micro font-normal text-faint">

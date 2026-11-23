@@ -151,11 +151,23 @@ export function LapAxis({
 export function PitMarker({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
-      <rect x={-7} y={-7} width={14} height={14} rx={3} className="fill-surface stroke-warn" strokeWidth={1.5} />
-      <text y={0} dy="0.35em" textAnchor="middle" className="fill-warn text-[10px] font-bold">
+      <rect x={-8} y={-8} width={16} height={16} rx={3} className="fill-surface stroke-warn" strokeWidth={1.5} />
+      <text y={0} dy="0.35em" textAnchor="middle" className="fill-warn text-micro font-bold">
         P
       </text>
     </g>
+  );
+}
+
+/** The same "P" chip for legends (HTML), at the 12px type minimum. */
+export function PitChip() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mr-1 inline-flex size-4 items-center justify-center rounded-[3px] border border-warn align-[-2px] text-micro font-bold leading-none text-warn"
+    >
+      P
+    </span>
   );
 }
 
@@ -170,7 +182,7 @@ export function NeutralBand({ x0, x1, plot, label }: { x0: number; x1: number; p
     <g>
       <rect x={x0} y={plot.top} width={w} height={plot.bottom - plot.top} className="fill-raised" />
       <rect x={x0} y={plot.top} width={w} height={2} className="fill-flag-yellow" />
-      <text x={x0 + w / 2} y={plot.top + 14} textAnchor="middle" className="fill-flag-yellow text-[10px] font-bold">
+      <text x={x0 + w / 2} y={plot.top + 14} textAnchor="middle" className="fill-flag-yellow text-micro font-bold">
         {label}
       </text>
     </g>

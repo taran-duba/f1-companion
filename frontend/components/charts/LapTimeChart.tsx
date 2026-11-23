@@ -17,7 +17,7 @@ import {
 import { formatMs } from "@/lib/timing";
 import type { LapRecord } from "@/lib/types";
 import { EmptyState } from "../Panel";
-import { ChartFigure, ChartSvg, HALO, LapAxis, LegendItem, PitMarker, YGrid, type Plot } from "./ChartParts";
+import { ChartFigure, ChartSvg, HALO, LapAxis, LegendItem, PitChip, PitMarker, YGrid, type Plot } from "./ChartParts";
 import { useChartWidth } from "./useChartWidth";
 
 interface Props {
@@ -29,11 +29,17 @@ interface Props {
   compareColour?: string;
   label?: string;
   compareLabel?: string;
+  /**
+   * Fastest lap in the whole field (ms). When this driver's best equals it, the best lap is
+   * marked purple ◆ "Fastest overall" (as in the sector table) instead of green ▲.
+   * Omitted: falls back to the lap's own `overallBest` flag.
+   */
+  overallBestMs?: number | null;
 }
 
-const STRIP_H = 16;
+const STRIP_H = 18;
 
-/** Lap time per lap: pit laps marked and kept out of the scale, compound strip under the axis, PB marked ▲. */
+/** Lap time per lap: pit laps marked and kept out of the scale, compound strip under the axis, best lap marked. */
 export function LapTimeChart({
   laps,
   compareLaps,
@@ -42,6 +48,7 @@ export function LapTimeChart({
   compareColour = "var(--color-muted)",
   label = "This driver",
   compareLabel = "Comparison",
+  overallBestMs,
 }: Props) {
   const { ref, width } = useChartWidth();
   const timed = laps.filter((l) => l.ms != null && l.ms > 0);
@@ -73,6 +80,8 @@ export function LapTimeChart({
 
   const clean = laps.filter((l) => !isPitLap(l) && l.ms != null && l.ms > 0);
   const best = clean.reduce<LapRecord | null>((b, l) => (b == null || (l.ms as number) < (b.ms as number) ? l : b), null);
+  const overall =
+    best != null && (overallBestMs === undefined ? best.overallBest : overallBestMs != null && best.ms === overallBestMs);
   const pits = laps.filter(isPitLap);
   const stops = pitStops(laps);
   const offScale = clean.filter((l) => (l.ms as number) > domain[1]);
@@ -80,7 +89,7 @@ export function LapTimeChart({
 
   const summary =
     `Lap times for ${label} over ${timed.length} laps, laps ${minLap} to ${maxLap}.` +
-    (best ? ` Best lap ${formatMs(best.ms)} on lap ${best.lap}.` : "") +
+    (best ? ` Best lap ${formatMs(best.ms)} on lap ${best.lap}${overall ? ", the fastest lap overall" : ""}.` : "") +
     (pits.length ? ` In and out laps, left out of the scale: ${pits.map((l) => l.lap).join(", ")}.` : "") +
     (offScale.length ? ` Off the top of the scale: laps ${offScale.map((l) => l.lap).join(", ")}.` : "") +
     ` Tyres: ${runs.map((r) => `${COMPOUND_STYLE[r.compound].name} laps ${r.start} to ${r.end}`).join("; ")}.` +
@@ -109,13 +118,14 @@ export function LapTimeChart({
                   stroke={st.colour}
                   strokeWidth={1}
                 />
-                {w >= 12 && (
+                {/* 12px letter needs ~14px; narrower runs rely on the summary and stint list. */}
+                {w >= 14 && (
                   <text
                     x={x0 + w / 2}
                     y={stripY + STRIP_H / 2}
                     dy="0.35em"
                     textAnchor="middle"
-                    className="text-[11px] font-bold"
+                    className="text-micro font-bold"
                     fill={st.colour}
                   >
                     {st.letter}
@@ -130,25 +140,31 @@ export function LapTimeChart({
           {stops.map((p) => (
             <PitMarker key={p.lap} x={x(p.at)} y={stripY + STRIP_H / 2} />
           ))}
-          {best && <BestMarker x={x(best.lap)} y={y(best.ms as number)} text={formatMs(best.ms)} right={plot.right} />}
+          {best && (
+            <BestMarker x={x(best.lap)} y={y(best.ms as number)} text={formatMs(best.ms)} right={plot.right} overall={overall} />
+          )}
         </ChartSvg>
       </ChartFigure>
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-small text-muted">
         {two && <LegendItem colour={colour} marker="circle" label={label} />}
         {two && <LegendItem colour={compareColour} dash="6 4" marker="square" label={compareLabel} />}
-        <span>
-          <span aria-hidden="true" className="mr-1 text-sector-green">
-            ▲
+        {overall ? (
+          <span>
+            <span aria-hidden="true" className="mr-1 text-sector-purple">
+              ◆
+            </span>
+            Fastest overall
           </span>
-          Personal best
-        </span>
-        <span>
-          <span
-            aria-hidden="true"
-            className="mr-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-warn text-[10px] font-bold leading-none text-warn"
-          >
-            P
+        ) : (
+          <span>
+            <span aria-hidden="true" className="mr-1 text-sector-green">
+              ▲
+            </span>
+            Personal best
           </span>
+        )}
+        <span>
+          <PitChip />
           Pit stop (in and out laps not plotted)
         </span>
         {offScale.length > 0 && (
@@ -215,18 +231,20 @@ function Series({
   );
 }
 
-function BestMarker({ x, y, text, right }: { x: number; y: number; text: string; right: number }) {
+/** Best-lap marker: purple ◆ when it is the fastest lap in the field, else green ▲ (personal best). */
+function BestMarker({ x, y, text, right, overall }: { x: number; y: number; text: string; right: number; overall: boolean }) {
   const anchorEnd = x > right - 70;
+  const fill = overall ? "fill-sector-purple" : "fill-sector-green";
   return (
     <g>
-      <text x={x} y={y} dy="0.38em" textAnchor="middle" className="fill-sector-green text-[13px]">
-        ▲
+      <text x={x} y={y} dy="0.38em" textAnchor="middle" className={`${fill} text-[13px]`}>
+        {overall ? "◆" : "▲"}
       </text>
       <text
         x={anchorEnd ? x - 9 : x + 9}
         y={y - 8}
         textAnchor={anchorEnd ? "end" : "start"}
-        className="num fill-sector-green text-micro font-semibold"
+        className={`num ${fill} text-micro font-semibold`}
         {...HALO}
       >
         {text}

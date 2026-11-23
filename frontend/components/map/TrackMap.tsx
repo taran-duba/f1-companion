@@ -84,7 +84,7 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
         >
           <span
             aria-hidden="true"
-            className={`flex size-4 items-center justify-center rounded-[3px] border text-[11px] leading-none ${
+            className={`flex size-4 items-center justify-center rounded-[3px] border text-micro leading-none ${
               showCodes ? "border-accent bg-accent text-bg" : "border-line-control"
             }`}
           >

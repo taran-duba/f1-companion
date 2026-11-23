@@ -3,10 +3,10 @@
 import { useMemo } from "react";
 import { asList } from "@/lib/merge";
 import { extent, lapTicks, linePath, neutralWindows, niceDomain, niceTicks, pitStops, scaleLinear } from "@/lib/charts";
-import { lapHistory, towerRows, type TowerRow } from "@/lib/timing";
+import { lapHistory, towerRows, trackStatus, type TowerRow } from "@/lib/timing";
 import type { RaceControlMessage, TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
-import { ChartFigure, ChartSvg, HALO, LapAxis, NeutralBand, PitMarker, YGrid, type Plot } from "./ChartParts";
+import { ChartFigure, ChartSvg, HALO, LapAxis, NeutralBand, PitChip, PitMarker, YGrid, type Plot } from "./ChartParts";
 import { BattleList } from "./BattleList";
 import { useChartWidth } from "./useChartWidth";
 
@@ -26,7 +26,7 @@ export function GapChart({ state, selected }: { state: TimingState; selected: st
       ) : (
         <IntervalChart state={state} row={row} ahead={ahead} />
       )}
-      <BattleList rows={rows} />
+      <BattleList rows={rows} tone={trackStatus(state).tone} />
     </div>
   );
 }
@@ -172,12 +172,7 @@ function IntervalChart({ state, row, ahead }: { state: TimingState; row: TowerRo
           Within 1 s: DRS range
         </span>
         <span>
-          <span
-            aria-hidden="true"
-            className="mr-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-warn text-[10px] font-bold leading-none text-warn"
-          >
-            P
-          </span>
+          <PitChip />
           Pit stop
         </span>
         {windows.length > 0 && (

@@ -55,7 +55,7 @@ export function DriverDetail({ params }: { params: Promise<{ code: string }> }) 
 
   const lapTimes = (
     <Panel id="lap-times" title="Lap times" meta={laps.length ? <span className="num">{laps.length} laps</span> : undefined}>
-      <LapTimeChart laps={laps} colour={row.teamColour} label={row.code} />
+      <LapTimeChart laps={laps} colour={row.teamColour} label={row.code} overallBestMs={field?.ms ?? null} />
     </Panel>
   );
   const stintPanel = (

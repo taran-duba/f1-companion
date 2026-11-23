@@ -6,7 +6,7 @@ import { useStream } from "@/lib/store";
 import type { TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
 import { DriverLine } from "./DriverLine";
-import { Gauges } from "./Gauges";
+import { CompactGauges, Gauges } from "./Gauges";
 import { RollingChart } from "./RollingChart";
 import { useTelemetryBuffer } from "./useTelemetryBuffer";
 import { teamColour } from "@/lib/timing";
@@ -37,12 +37,13 @@ function WindowToggle({ value, onChange }: { value: number; onChange: (ms: numbe
   );
 }
 
-function TelemetryBody({ state, num, windowMs, onWindow, paused }: {
+function TelemetryBody({ state, num, windowMs, onWindow, paused, compact }: {
   state: TimingState;
   num: string;
   windowMs: number;
   onWindow: (ms: number) => void;
   paused: boolean;
+  compact: boolean;
 }) {
   const { samples, backfilled, error } = useTelemetryBuffer(state, num);
   const driver = state.DriverList?.[num];
@@ -57,6 +58,23 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused }: {
           ? `Couldn't load the last minute of telemetry for ${code}. ${/[.?!]$/.test(error) ? error : `${error}.`} New samples appear here as soon as the feed sends them.`
           : `No car data for ${code} yet. Speed, throttle and brake appear here as soon as the feed sends samples for this car.`}
       </EmptyState>
+    );
+  }
+
+  if (compact) {
+    // Live-dashboard strip: fixed 30 s window, no toggle, chart about 120px tall.
+    const ms = WINDOWS[0];
+    return (
+      <div className="flex flex-col gap-3">
+        <CompactGauges sample={latest} />
+        <div className="flex flex-col gap-1 border-t border-line pt-2">
+          <h3 className="text-micro text-muted">
+            Last <span className="num">{ms / 1000}</span> seconds
+            {paused && <span className="ml-2 font-normal text-faint">(replay paused)</span>}
+          </h3>
+          <RollingChart samples={samples} windowMs={ms} colour={teamColour(driver)} code={code} compact />
+        </div>
+      </div>
     );
   }
 
@@ -77,8 +95,19 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused }: {
   );
 }
 
-/** Selected driver's live telemetry: gauges plus a short rolling chart. */
-export function TelemetryPanel({ state, selected }: { state: TimingState; selected: string | null }) {
+/**
+ * Selected driver's live telemetry: gauges plus a short rolling chart. `compact` is the
+ * live-dashboard strip (one row of readouts, 30 s chart, no window toggle).
+ */
+export function TelemetryPanel({
+  state,
+  selected,
+  compact = false,
+}: {
+  state: TimingState;
+  selected: string | null;
+  compact?: boolean;
+}) {
   const { status, generation } = useStream();
   const [windowMs, setWindowMs] = useState<number>(WINDOWS[0]);
 
@@ -90,8 +119,8 @@ export function TelemetryPanel({ state, selected }: { state: TimingState; select
   const noToken = source?.kind === "live" && !state.Feed?.telemetry;
 
   return (
-    <div className="flex flex-col gap-4">
-      <DriverLine state={state} num={selected} />
+    <div className={`flex flex-col ${compact ? "gap-3" : "gap-4"}`}>
+      <DriverLine state={state} num={selected} compact={compact} />
       {noToken ? (
         <EmptyState>
           <p>Car telemetry needs an F1 TV token in live mode. Timing still works.</p>
@@ -110,6 +139,7 @@ export function TelemetryPanel({ state, selected }: { state: TimingState; select
           windowMs={windowMs}
           onWindow={setWindowMs}
           paused={source?.state === "paused"}
+          compact={compact}
         />
       )}
     </div>

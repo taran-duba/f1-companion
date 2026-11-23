@@ -205,7 +205,7 @@ function Legend({ series }: { series: TraceSeries[] }) {
           <Swatch id={s.id} />
           <span className="text-muted">
             {STYLE[s.id].glyph && (
-              <span aria-hidden="true" className="mr-1 text-[0.75em] text-sector-green">
+              <span aria-hidden="true" className="mr-1 text-micro text-sector-green">
                 {STYLE[s.id].glyph}
               </span>
             )}
