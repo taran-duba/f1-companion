@@ -176,7 +176,8 @@ export function SourcePicker({ status }: { status: ServerStatus | null }) {
           );
         })}
       </div>
-      <div aria-live="polite" className="mt-3 grid gap-1 text-small empty:hidden">
+      {/* Always rendered (never display:none) so screen readers see the region before its text changes. */}
+      <div aria-live="polite" className="grid gap-1 text-small [&:not(:empty)]:mt-3">
         {result?.ok && <StatusText tone="ok">{result.message}</StatusText>}
         {sourcesError && <StatusText tone="warn">{`Couldn't check which sources are available. ${sourcesError}`}</StatusText>}
       </div>

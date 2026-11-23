@@ -142,7 +142,8 @@ export function LapTimeChart({
                   height={STRIP_H}
                   rx={2}
                   fill={st.colour}
-                  fillOpacity={0.22}
+                  // 0.14 keeps the same-colour letter above 4.5:1 (soft red is the tightest).
+                  fillOpacity={0.14}
                   stroke={st.colour}
                   strokeWidth={1}
                 />

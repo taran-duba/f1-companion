@@ -141,6 +141,8 @@ export function Transport({ source, totalLaps, send, error }: Props) {
         value={shown}
         markers={markers}
         valueText={`${spokenClock(elapsed)} of ${spokenClock(total)}${lapText ? `, ${lapText.toLowerCase()}` : ""}`}
+        // While playback moves the slider, a focused slider only re-announces once per lap (or minute).
+        holdKey={source.state === "playing" && scrub === null ? (lap != null ? `lap${lap}` : `min${Math.floor(elapsed / 60)}`) : null}
         onScrub={setScrub}
         onCommit={(v) => void commitSeek(v)}
         onCancel={() => setScrub(null)}

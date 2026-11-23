@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { memo, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { formatMs } from "@/lib/timing";
 import { formatDistance, sampleAt, type TracePoint } from "./model";
 
@@ -43,6 +43,7 @@ type Field = "speed" | "throttle" | "brake";
 export const TraceChart = memo(function TraceChart({ series, note }: { series: TraceSeries[]; note?: string }) {
   const [cursor, setCursor] = useState<number | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
+  const helpId = useId();
 
   // Scales, SVG paths and the text summary depend only on the series, not on
   // the cursor: build them once per fetched trace, not on every drag event.
@@ -77,11 +78,12 @@ export const TraceChart = memo(function TraceChart({ series, note }: { series: T
   }
 
   function onKey(e: KeyboardEvent<HTMLDivElement>) {
-    const step = maxDist * (e.shiftKey ? 0.1 : 0.02);
+    const big = e.shiftKey || e.key === "PageUp" || e.key === "PageDown";
+    const step = maxDist * (big ? 0.1 : 0.02);
     const at = cursor ?? 0;
     let next: number | null | undefined;
-    if (e.key === "ArrowRight") next = Math.min(maxDist, at + step);
-    if (e.key === "ArrowLeft") next = Math.max(0, at - step);
+    if (e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "PageUp") next = Math.min(maxDist, at + step);
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "PageDown") next = Math.max(0, at - step);
     if (e.key === "Home") next = 0;
     if (e.key === "End") next = maxDist;
     if (e.key === "Escape") next = null;
@@ -98,10 +100,23 @@ export const TraceChart = memo(function TraceChart({ series, note }: { series: T
       <Legend series={series} />
       {note && <p className="mt-1 text-small text-faint">{note}</p>}
       <Readout series={series} cursor={cursor} />
+      {/*
+        A slider, not a group: screen readers switch to focus mode on it (so the arrow keys
+        reach onKey) and read aria-valuetext, the readout's values, at every step.
+      */}
+      <span id={helpId} className="sr-only">
+        Speed, throttle and brake against distance. Left and right arrow keys move along the lap, Page Up and Page Down
+        in bigger steps, Home and End to the start and finish.
+      </span>
       <div
-        role="group"
+        role="slider"
         tabIndex={0}
-        aria-label="Speed, throttle and brake against distance. Use the left and right arrow keys to read values along the lap."
+        aria-label="Lap position"
+        aria-describedby={helpId}
+        aria-valuemin={0}
+        aria-valuemax={Math.round(maxDist)}
+        aria-valuenow={Math.round(cursor ?? 0)}
+        aria-valuetext={valueText(series, cursor ?? 0)}
         onKeyDown={onKey}
         onBlur={() => setCursor(null)}
         className="mt-2 rounded-chip"
@@ -298,6 +313,17 @@ function Readout({ series, cursor }: { series: TraceSeries[]; cursor: number | n
       </tbody>
     </table>
   );
+}
+
+/** The readout as one sentence, e.g. "1.2 km: Last lap 285 km/h, throttle 100%, brake 0%; Best lap …". */
+function valueText(series: TraceSeries[], at: number): string {
+  const parts = series.map((s) => {
+    const p = sampleAt(s.points, at);
+    return p
+      ? `${s.label} ${Math.round(p.speed)} km/h, throttle ${Math.round(p.throttle)}%, brake ${Math.round(p.brake)}%`
+      : `${s.label} no data`;
+  });
+  return `${formatDistance(at)}: ${parts.join("; ")}`;
 }
 
 function thin(points: TracePoint[]): TracePoint[] {

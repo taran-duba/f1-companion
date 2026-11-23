@@ -48,6 +48,8 @@ export function DriverDetail({ params }: { params: Promise<{ code: string }> }) 
   if (!driver || !num || !row) {
     return (
       <div className="mx-auto mt-10 max-w-xl rounded-panel border border-line-strong bg-surface p-6">
+        {/* React hoists this into <head>, overriding the route's "CODE – Drivers" title. */}
+        <title>Driver not found | F1 Companion</title>
         <h1 className="text-title font-bold">No driver &ldquo;{code.toUpperCase()}&rdquo; in this session</h1>
         <p className="mt-2 text-muted">
           {driver

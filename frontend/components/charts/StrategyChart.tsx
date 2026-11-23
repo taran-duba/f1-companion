@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type KeyboardEvent } from "react";
+import { useMemo, type KeyboardEvent, type MouseEvent } from "react";
 import { COMPOUND_STYLE, lapTicks, scaleLinear, stintSpans, type StintSpan } from "@/lib/charts";
 import { stints, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
@@ -18,10 +18,15 @@ interface Props {
   state: TimingState;
   onSelect?: (num: string) => void;
   selected?: string | null;
+  /**
+   * When rows lead to another page: each row becomes a real link (open in new tab, copy
+   * link, announced as a link). A plain click still calls `onSelect` for client navigation.
+   */
+  hrefFor?: (num: string) => string;
 }
 
 /** Tyre strategy for the whole field in running order: one bar per stint across the race laps. */
-export function StrategyChart({ state, onSelect, selected }: Props) {
+export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
   const { ref, width } = useChartWidth();
   const data: StrategyRow[] = useMemo(
     () =>
@@ -103,6 +108,7 @@ export function StrategyChart({ state, onSelect, selected }: Props) {
               x={x}
               selected={selected === undefined ? undefined : selected === d.row.num}
               onSelect={onSelect}
+              href={hrefFor?.(d.row.num)}
             />
           ))}
         </ChartSvg>
@@ -143,6 +149,7 @@ function StrategyBarRow({
   x,
   selected,
   onSelect,
+  href,
 }: {
   d: StrategyRow;
   y: number;
@@ -153,32 +160,30 @@ function StrategyBarRow({
   /** Undefined when the chart has no selection state (rows then act as plain buttons). */
   selected?: boolean;
   onSelect?: (num: string) => void;
+  href?: string;
 }) {
   const { row, spans } = d;
-  const dim = row.retired ? 0.5 : 1;
+  // Retired cars: only the marks fade (bars, outlines, team bar). Text keeps full strength so
+  // it stays readable (≥ 4.5:1); the code drops to muted and the "DNF" word carries the state.
+  const fade = row.retired ? 0.5 : 1;
   const by = y + (rowH - barH) / 2;
   const cy = y + rowH / 2;
-  const interactive = !!onSelect;
+  const interactive = !!onSelect || !!href;
+  const label = `${row.code}${row.position < 99 ? `, position ${row.position}` : ""}${row.retired ? ", retired" : row.stopped ? ", stopped" : ""}`;
   const onKey = (e: KeyboardEvent<SVGGElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect?.(row.num);
     }
   };
-  return (
-    <g
-      className={`group outline-none ${interactive ? "cursor-pointer" : ""}`}
-      {...(interactive
-        ? {
-            role: "button",
-            tabIndex: 0,
-            "aria-label": `${row.code}${row.position < 99 ? `, position ${row.position}` : ""}${row.retired ? ", retired" : row.stopped ? ", stopped" : ""}`,
-            ...(selected === undefined ? {} : { "aria-pressed": selected }),
-            onClick: () => onSelect?.(row.num),
-            onKeyDown: onKey,
-          }
-        : {})}
-    >
+  // Modified and middle clicks keep the browser's link behaviour (new tab, new window).
+  const onLinkClick = (e: MouseEvent<Element>) => {
+    if (!onSelect || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onSelect(row.num);
+  };
+  const body = (
+    <>
       <rect
         x={0}
         y={y + 1}
@@ -189,13 +194,12 @@ function StrategyBarRow({
         className={`${selected ? "fill-raised" : interactive ? "fill-transparent group-hover:fill-raised" : "fill-transparent"} stroke-transparent group-focus-visible:stroke-accent`}
       />
       {selected && <rect x={0} y={y + 1} width={2} height={rowH - 2} className="fill-accent" />}
-      {/* Retired cars are dimmed; the "DNF" word below stays full strength. */}
-      <g opacity={dim}>
+      <g>
         <text x={20} y={cy} dy="0.35em" textAnchor="end" className="num fill-faint text-micro">
           {row.position < 99 ? row.position : ""}
         </text>
-        <rect x={25} y={cy - 8} width={4} height={16} rx={1} fill={row.teamColour} />
-        <text x={33} y={cy} dy="0.35em" className="fill-text text-small font-semibold">
+        <rect x={25} y={cy - 8} width={4} height={16} rx={1} fill={row.teamColour} opacity={fade} />
+        <text x={33} y={cy} dy="0.35em" className={`${row.retired ? "fill-muted" : "fill-text"} text-small font-semibold`}>
           {row.code}
         </text>
         {spans.map((s) => {
@@ -215,6 +219,7 @@ function StrategyBarRow({
                   rx={2}
                   fill="none"
                   stroke={style.colour}
+                  strokeOpacity={fade}
                   strokeWidth={1.5}
                 />
                 <text x={cx0 + 8} y={cy} dy="0.35em" textAnchor="middle" className="text-micro font-bold" fill={style.colour}>
@@ -228,11 +233,11 @@ function StrategyBarRow({
           const w = Math.max(1, x1 - x0);
           // Text is 12px minimum: the lap count needs ~46px with its letter, the letter alone ~14px.
           // Narrower stints drop the text (no tiny glyphs); the tooltip and the table below carry it.
-          const label = w >= 46 ? `${style.letter} ${s.laps}` : w >= 14 ? style.letter : "";
+          const text = w >= 46 ? `${style.letter} ${s.laps}` : w >= 14 ? style.letter : "";
           return (
             <g key={s.index}>
               <title>{`${style.name}, laps ${s.start}–${s.end} (${s.laps} lap${s.laps === 1 ? "" : "s"})`}</title>
-              <rect x={x0} y={by} width={w} height={barH} rx={2} fill={style.colour} fillOpacity={0.22} />
+              <rect x={x0} y={by} width={w} height={barH} rx={2} fill={style.colour} fillOpacity={0.14 * fade} />
               <path
                 d={
                   s.current && !row.retired
@@ -241,9 +246,10 @@ function StrategyBarRow({
                 }
                 fill="none"
                 stroke={style.colour}
+                strokeOpacity={fade}
                 strokeWidth={1.5}
               />
-              {label && (
+              {text && (
                 <text
                   x={x0 + w / 2}
                   y={cy}
@@ -252,7 +258,7 @@ function StrategyBarRow({
                   className="num text-micro font-bold"
                   fill={style.colour}
                 >
-                  {label}
+                  {text}
                 </text>
               )}
             </g>
@@ -269,6 +275,7 @@ function StrategyBarRow({
                 y1={by - 3}
                 y2={by + barH + 3}
                 className="stroke-line-control"
+                strokeOpacity={fade}
                 strokeWidth={2}
               />
             ) : null,
@@ -285,6 +292,30 @@ function StrategyBarRow({
           {row.retired ? "DNF" : "Stopped"}
         </text>
       )}
+    </>
+  );
+  if (href) {
+    return (
+      <a href={href} aria-label={label} onClick={onLinkClick} className="group cursor-pointer outline-none">
+        {body}
+      </a>
+    );
+  }
+  return (
+    <g
+      className={`group outline-none ${interactive ? "cursor-pointer" : ""}`}
+      {...(interactive
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": label,
+            ...(selected === undefined ? {} : { "aria-pressed": selected }),
+            onClick: () => onSelect?.(row.num),
+            onKeyDown: onKey,
+          }
+        : {})}
+    >
+      {body}
     </g>
   );
 }

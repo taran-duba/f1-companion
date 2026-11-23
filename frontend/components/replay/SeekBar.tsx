@@ -74,6 +74,13 @@ interface Props {
   markers: ReplayMarkers;
   disabled?: boolean;
   valueText: string;
+  /**
+   * Non-null while the value is moving on its own (playback, no user input).
+   * While the slider has focus, its value and valuetext are then held and only
+   * refreshed when this key changes (e.g. each lap), so a screen reader isn't
+   * told the new position several times a second. Null passes `value` through.
+   */
+  holdKey?: string | number | null;
   /** Every input event while dragging (preview only). */
   onScrub: (v: number) => void;
   /** Pointer released or keyboard step: the seek to send. */
@@ -95,13 +102,34 @@ const KEY_STEP: Record<string, number> = { ArrowLeft: -10, ArrowDown: -10, Arrow
  * draws the rail, played portion, lap ticks and shaded safety car / VSC /
  * red flag periods. Commits on the native `change` event only.
  */
-export function SeekBar({ start, end, value, markers, disabled, valueText, onScrub, onCommit, onCancel, onKeySeek }: Props) {
+export function SeekBar({
+  start,
+  end,
+  value: liveValue,
+  markers,
+  disabled,
+  valueText: liveText,
+  holdKey = null,
+  onScrub,
+  onCommit,
+  onCancel,
+  onKeySeek,
+}: Props) {
   const id = `seek${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const commit = useRef(onCommit);
   const committed = useRef(false);
   const [width, setWidth] = useState(600);
+  const [focused, setFocused] = useState(false);
+  const [held, setHeld] = useState<{ key: string | number; value: number; text: string } | null>(null);
+
+  // Hold the position while focused and moving on its own (derived state, set during render).
+  const holding = focused && holdKey !== null;
+  if (holding && held?.key !== holdKey) setHeld({ key: holdKey, value: liveValue, text: liveText });
+  if (!holding && held !== null) setHeld(null);
+  const value = holding && held ? held.value : liveValue;
+  const valueText = holding && held ? held.text : liveText;
 
   useEffect(() => {
     commit.current = onCommit;
@@ -198,6 +226,8 @@ export function SeekBar({ start, end, value, markers, disabled, valueText, onScr
           disabled={disabled}
           aria-valuetext={valueText}
           onChange={(e) => onScrub(Number(e.target.value))}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onKeyDown={(e) => {
             const delta = KEY_STEP[e.key];
             if (delta === undefined || e.altKey || e.ctrlKey || e.metaKey) return;

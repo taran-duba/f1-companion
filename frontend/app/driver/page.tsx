@@ -17,6 +17,7 @@ export default function DriversPage() {
   if (!state) return <LoadingState />;
 
   const codeOf = (num: string) => state.DriverList?.[num]?.Tla ?? num;
+  const hrefFor = (num: string) => `/driver/${encodeURIComponent(codeOf(num))}`;
   const lap = state.LapCount?.CurrentLap;
   const total = state.LapCount?.TotalLaps;
 
@@ -36,7 +37,8 @@ export default function DriversPage() {
       <Panel id="strategy" title="Tyre strategy">
         {/* relative + overflow-hidden contains the chart's screen-reader table, which is wider than a phone. */}
         <div className="relative overflow-hidden">
-          <StrategyChart state={state} onSelect={(num) => router.push(`/driver/${encodeURIComponent(codeOf(num))}`)} />
+          {/* Rows are links to each driver's page; a plain click navigates client-side. */}
+          <StrategyChart state={state} hrefFor={hrefFor} onSelect={(num) => router.push(hrefFor(num))} />
         </div>
       </Panel>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip, Diamond, MarkedTime, TyreBadge, tyreName } from "@/components/timing/Atoms";
+import { Chip, Diamond, MarkedTime, TyreBadge } from "@/components/timing/Atoms";
 import { EmptyState } from "@/components/Panel";
 import { formatMs } from "@/lib/timing";
 import type { LapRecord } from "@/lib/types";
@@ -85,8 +85,9 @@ export function SectorTable({
                     <span className="flex items-center gap-1.5">
                       {tyre.known ? <TyreBadge compound={tyre.compound} size={20} /> : <span className="text-faint">—</span>}
                       {tyre.known && tyre.age != null && (
-                        <span className="num hidden text-small text-muted md:inline" aria-label={`${tyreName(tyre.compound)}, ${tyre.age} laps old`}>
+                        <span className="num hidden text-small text-muted md:inline">
                           {tyre.age}
+                          <span className="sr-only"> laps old</span>
                         </span>
                       )}
                     </span>

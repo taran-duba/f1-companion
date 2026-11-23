@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { SourcesResponse } from "@/lib/api";
 import { useNow } from "@/lib/store";
 import type { ServerStatus } from "@/lib/types";
@@ -33,6 +33,10 @@ export function FastF1Form({
   const [session, setSession] = useState("R");
   const { pending, error, run } = useSourceSwitch();
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  // Field errors show once a submit has been tried (the button stays enabled so Enter and Tab reach it).
+  const [tried, setTried] = useState(false);
+  const yearRef = useRef<HTMLInputElement>(null);
+  const eventRef = useRef<HTMLInputElement>(null);
 
   const serverLoading = server?.loading && server.loading.kind === "fastf1" ? server.loading : null;
   const isLoading = pending !== null || !!serverLoading;
@@ -44,7 +48,12 @@ export function FastF1Form({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!yearValid || !eventValid || isLoading) return;
+    if (isLoading) return;
+    if (!yearValid || !eventValid) {
+      setTried(true);
+      (!yearValid ? yearRef : eventRef).current?.focus();
+      return;
+    }
     setStartedAt(Date.now());
     await run("fastf1", { kind: "fastf1", year: yearNum, event: event.trim(), session, speed: 1 });
     setStartedAt(null);
@@ -76,6 +85,7 @@ export function FastF1Form({
             Year
           </label>
           <input
+            ref={yearRef}
             id="ff1-year"
             type="number"
             inputMode="numeric"
@@ -89,7 +99,7 @@ export function FastF1Form({
             className={`num ${FIELD}`}
           />
           {!yearValid && (
-            <p id="ff1-year-err" className="mt-1 text-small text-danger">
+            <p id="ff1-year-err" role={tried ? "alert" : undefined} className="mt-1 text-small text-danger">
               2018 or later
             </p>
           )}
@@ -99,15 +109,22 @@ export function FastF1Form({
             Event
           </label>
           <input
+            ref={eventRef}
             id="ff1-event"
             type="text"
             required
             autoComplete="off"
             value={event}
             onChange={(e) => setEvent(e.target.value)}
-            aria-describedby="ff1-event-help"
+            aria-invalid={tried && !eventValid}
+            aria-describedby={tried && !eventValid ? "ff1-event-err ff1-event-help" : "ff1-event-help"}
             className={FIELD}
           />
+          {tried && !eventValid && (
+            <p id="ff1-event-err" role="alert" className="mt-1 text-small text-danger">
+              Enter an event to load.
+            </p>
+          )}
           <p id="ff1-event-help" className="mt-1 text-small text-faint">
             Name or round number, e.g. Monza or 14
           </p>
@@ -125,10 +142,20 @@ export function FastF1Form({
           </select>
         </div>
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-          <button type="submit" disabled={isLoading || !yearValid || !eventValid} className={BUTTON}>
+          {/* aria-disabled, not disabled, while loading: the button keeps focus and stays in the tab order. */}
+          <button
+            type="submit"
+            aria-disabled={isLoading || undefined}
+            aria-describedby={!eventValid && !isLoading && !tried ? "ff1-submit-hint" : undefined}
+            className={`${BUTTON} aria-disabled:cursor-not-allowed aria-disabled:opacity-60`}
+          >
             {isLoading ? "Loading session…" : "Load session"}
           </button>
-          {!eventValid && !isLoading && <span className="text-small text-faint">Enter an event to load.</span>}
+          {!eventValid && !isLoading && !tried && (
+            <span id="ff1-submit-hint" className="text-small text-faint">
+              Enter an event to load.
+            </span>
+          )}
         </div>
       </form>
 

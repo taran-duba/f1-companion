@@ -21,9 +21,22 @@ interface Props {
  * shares the screen with other panels, so viewport breakpoints lie.
  * always: pos, driver, interval, last lap, tyre (fits 328px)
  * ≥ 440px: + gap · ≥ 560px: + best, pits · ≥ 790px: + sectors
- * Sector headers have a fixed width: sectors clear every lap, and auto widths made
- * every column to their right jump as they refilled.
+ * Every column but Driver has a fixed width, sized for its widest value (battle outline,
+ * a marked time, a two-digit tyre age): with auto widths, columns jumped sideways whenever
+ * a gap or lap time changed length or a sector cleared. Driver takes the spare width, so its
+ * chips (PIT, OUT, DNF) appear without moving anything. Times use 8px right padding at
+ * every size; 12px (lg:pr-3) left the desktop tower no room to reserve those widths.
  */
+const W = {
+  interval: "w-[4.75rem] lg:w-[5.25rem]",
+  gap: "w-[4.25rem] lg:w-[4.375rem]",
+  last: "w-[5.75rem] lg:w-[6.125rem]",
+  best: "w-[5.25rem] lg:w-[5.375rem]",
+  sector: "w-[4.75rem]",
+  tyre: "w-10 @min-[360px]:w-14 @min-[560px]:w-16",
+  pits: "w-8",
+};
+
 const COL = {
   gap: "hidden @min-[440px]:table-cell",
   best: "hidden @min-[560px]:table-cell",
@@ -84,31 +97,31 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <th scope="col" className="py-1 pl-1">
               Driver
             </th>
-            <th scope="col" className="py-1 pr-2 lg:pr-3 text-right">
+            <th scope="col" className={`py-1 pr-2 text-right ${W.interval}`}>
               Interval
             </th>
-            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.gap)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${W.gap} ${c(COL.gap)}`}>
               Gap
             </th>
-            <th scope="col" className="py-1 pr-2 lg:pr-3 text-right">
+            <th scope="col" className={`py-1 pr-2 text-right ${W.last}`}>
               Last lap
             </th>
-            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${W.best} ${c(COL.best)}`}>
               Best
             </th>
-            <th scope="col" className={`w-[4.75rem] py-1 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${W.sector} ${c(COL.sectors)}`}>
               S1
             </th>
-            <th scope="col" className={`w-[4.75rem] py-1 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${W.sector} ${c(COL.sectors)}`}>
               S2
             </th>
-            <th scope="col" className={`w-[4.75rem] py-1 pr-2 lg:pr-3 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${W.sector} ${c(COL.sectors)}`}>
               S3
             </th>
-            <th scope="col" className="py-1 pr-2 @min-[560px]:pl-2">
+            <th scope="col" className={`py-1 pr-2 @min-[560px]:pl-2 ${compact ? "w-14 @min-[560px]:w-16" : W.tyre}`}>
               Tyre
             </th>
-            <th scope="col" className={`py-1 pr-1 text-right ${c(COL.pits)}`}>
+            <th scope="col" className={`py-1 pr-1 text-right ${W.pits} ${c(COL.pits)}`}>
               <abbr title="Pit stops" className="no-underline">
                 Pits
               </abbr>
@@ -174,6 +187,7 @@ const Row = memo(function Row({
             onSelect(r.num);
           }}
           aria-pressed={selected}
+          aria-keyshortcuts="ArrowUp ArrowDown J K Home End"
           data-num={r.num}
           tabIndex={focusable ? 0 : -1}
           // Name starts with the visible text (code + chip) so voice control can target it.
@@ -190,17 +204,17 @@ const Row = memo(function Row({
           )}
         </button>
       </th>
-      <td className="num pr-2 lg:pr-3 text-right">
+      <td className="num pr-2 text-right">
         <Interval row={r} />
       </td>
-      <td className={`num pr-2 lg:pr-3 text-right ${c(COL.gap)}`}>
+      <td className={`num pr-2 text-right ${c(COL.gap)}`}>
         {out || (!r.gap.leader && formatGap(r.gap) === "—") ? (
           <span className="text-faint">—</span>
         ) : (
           <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: leaderLap(r) })}</span>
         )}
       </td>
-      <td className="pr-2 lg:pr-3 text-right">
+      <td className="pr-2 text-right">
         {out ? (
           // A retired car's last lap is history: no sector colour, row colour (muted).
           <StaleTime value={r.lastLap.value} />
@@ -211,7 +225,7 @@ const Row = memo(function Row({
           </Flash>
         )}
       </td>
-      <td className={`pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
+      <td className={`pr-2 text-right ${c(COL.best)}`}>
         {out && r.bestLap.mark !== "purple" ? (
           <StaleTime value={r.bestLap.value} />
         ) : (
@@ -219,7 +233,7 @@ const Row = memo(function Row({
         )}
       </td>
       {r.sectors.map((s, i) => (
-        <td key={i} className={`${i === 2 ? "pr-2 lg:pr-3" : "pr-2"} text-right text-body ${c(COL.sectors)}`}>
+        <td key={i} className={`pr-2 text-right text-body ${c(COL.sectors)}`}>
           {out ? <StaleTime value={s.value} /> : <MarkedTime value={s.value} mark={s.mark} sector />}
         </td>
       ))}

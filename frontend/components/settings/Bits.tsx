@@ -21,8 +21,9 @@ export function Detail({ term, children }: { term: string; children: ReactNode }
 /** Em dash for an empty value (never blank). */
 export function Empty({ label = "Not available" }: { label?: string }) {
   return (
-    <span className="text-faint" aria-label={label}>
-      —
+    <span className="text-faint">
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{label}</span>
     </span>
   );
 }

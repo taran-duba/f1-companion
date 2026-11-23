@@ -14,7 +14,6 @@ import { TimingTower } from "@/components/timing/TimingTower";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
 import { towerRows } from "@/lib/timing";
-import type { TimingState } from "@/lib/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
 export default function LivePage() {
@@ -31,14 +30,20 @@ export default function LivePage() {
     if (first) select(first.num);
   }, [state, selected, select]);
 
-  useDriverKeys(state, selected, select);
-
   if (!state) return <LoadingState />;
 
   const code = state.DriverList?.[selected ?? ""]?.Tla;
+  // The ticker and the driver bar switch tabs from elsewhere on the page: move focus to the
+  // newly selected tab (after React has rendered it) so keyboard and screen-reader users land
+  // where the content now is, instead of on a control that has scrolled out of view.
   const openTab = (id: string) => {
     setTab(id);
-    tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    requestAnimationFrame(() => {
+      tabsRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
+      // JS smooth scrolling ignores the CSS reduced-motion guard, so check it here.
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      tabsRef.current?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    });
   };
 
   if (wide) {
@@ -111,34 +116,7 @@ function KeyHint() {
     <span className="inline-flex items-center gap-1">
       <kbd className={KBD}>j</kbd>
       <kbd className={KBD}>k</kbd>
-      <span className="ml-0.5">change driver</span>
+      <span className="ml-0.5">change driver in the tower</span>
     </span>
   );
-}
-
-/**
- * j/k anywhere on the page move the selection through the running order. Inside the
- * tower the tower's own handler (arrows, j/k, Home/End, moving focus too) wins: it
- * calls preventDefault, so this listener skips the event instead of moving twice.
- */
-function useDriverKeys(state: TimingState | null, selected: string | null, select: (n: string) => void) {
-  useEffect(() => {
-    if (!state) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute("role") === "slider")) return;
-      const dir = e.key === "j" ? 1 : e.key === "k" ? -1 : 0;
-      if (!dir || !state) return;
-      const rows = towerRows(state);
-      const i = rows.findIndex((r) => r.num === selected);
-      const next = rows[Math.min(rows.length - 1, Math.max(0, (i < 0 ? 0 : i) + dir))];
-      if (next) {
-        e.preventDefault();
-        select(next.num);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [state, selected, select]);
 }

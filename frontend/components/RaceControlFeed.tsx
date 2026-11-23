@@ -33,8 +33,10 @@ function time(utc?: string) {
 
 /**
  * Newest first. With `initial`, only the latest few show until "Show all" is
- * pressed, so the panel stays short enough to sit above the fold. New
- * messages are announced politely to screen readers.
+ * pressed, so the panel stays short enough to sit above the fold. While collapsed,
+ * every row has the same height (text clamped to two lines; "Show all" has the rest),
+ * so a new message never pushes the panels below up or down. New messages are
+ * announced politely to screen readers, in full.
  */
 export function RaceControlFeed({ state, limit = 60, initial, maxHeight = "28rem" }: {
   state: TimingState;
@@ -60,7 +62,7 @@ export function RaceControlFeed({ state, limit = 60, initial, maxHeight = "28rem
         aria-label="Race control messages, newest first"
       >
         {msgs.map((m, i) => (
-          <MessageRow key={`${m.Utc}-${i}-${m.Message}`} m={m} />
+          <MessageRow key={`${m.Utc}-${i}-${m.Message}`} m={m} clamp={collapsed} />
         ))}
       </ol>
       {initial != null && all.length > initial && (
@@ -77,15 +79,18 @@ export function RaceControlFeed({ state, limit = 60, initial, maxHeight = "28rem
   );
 }
 
-function MessageRow({ m }: { m: RaceControlMessage }) {
+/** Collapsed row height: py-2 + two 24px lines + the 1px divider. */
+const CLAMPED_ROW = "h-[4.0625rem] overflow-hidden";
+
+function MessageRow({ m, clamp }: { m: RaceControlMessage; clamp: boolean }) {
   const t = tag(m);
   return (
-    <li className="flex gap-3 border-b border-line py-2 last:border-b-0">
+    <li className={`flex gap-3 border-b border-line py-2 last:border-b-0 ${clamp ? CLAMPED_ROW : ""}`}>
       <div className="flex w-16 shrink-0 flex-col font-mono text-micro text-faint">
         <time dateTime={m.Utc}>{time(m.Utc)}</time>
         {m.Lap != null && <span>Lap {m.Lap}</span>}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className={`min-w-0 flex-1 leading-6 ${clamp ? "line-clamp-2" : ""}`}>
         {t && <span className={`mr-2 inline-flex rounded-chip border px-1.5 text-micro font-bold leading-5 ${t.cls}`}>{t.label}</span>}
         <span className="text-small text-text">{sentence(m.Message ?? "")}</span>
       </div>
