@@ -56,7 +56,7 @@ three surfaces; most clear AAA (7:1).
 |---|---|---|---|
 | `sector-purple` | `#C68AFF` | Fastest overall | `◆` diamond glyph before the time, `aria-label="fastest overall"` |
 | `sector-green` | `#3DDC84` | Personal best | `▲` triangle glyph, `aria-label="personal best"` |
-| `sector-yellow` | `#FFD43B` | Slower than personal best | no glyph, plain weight; legend explains |
+| `sector-yellow` | `#FFD43B` | Slower than personal best (sectors only) | no glyph, plain weight; legend explains. In the tower's last-lap column a non-PB lap is plain `text`: yellow on 19 of 20 rows carried no signal (critique, 2026-11-23). |
 | (none) | `text` | No time yet | `—` |
 
 Mini-sector segment bars use the same colours **and** different fills: purple = solid, green =
@@ -80,14 +80,14 @@ Rendered as a 2px ring in the compound colour with the letter inside in the same
 
 | State | Colour | Label |
 |---|---|---|
-| Green / all clear | `ok` | "GREEN" |
+| Green / all clear | `ok`, **outline** pill, 3px band | "Green flag" — the normal state stays quiet so abnormal states stand out |
 | Yellow | `flag-yellow` `#FFD43B` | "YELLOW" |
 | SC deployed | `flag-yellow` on `raised`, black text badge | "SAFETY CAR" |
 | VSC / VSC ending | `flag-yellow` | "VSC" / "VSC ENDING" |
 | Red | `flag-red` `#FF5C5C` | "RED FLAG" |
 | Chequered | black/white checker swatch | "CHEQUERED" |
 
-The track status pill is the one place colour floods a background; text on it is `#05070D`
+Abnormal states get a filled pill, a 10px band, a 10% tint and a 6px left edge stripe on the session header, and a single 600 ms attention fade when the state changes (none under reduced motion). The track status pill is the one place colour floods a background; text on it is `#05070D`
 (≥ 9:1 on yellow/green, 6.6:1 on red).
 
 ### Team colours
@@ -130,8 +130,9 @@ Weights: 400 body, 500 data, 600 labels/titles, 700 headline numbers. No light w
 | `6` | 24 | Gaps between panels, page gutter (desktop) |
 | `8` | 32 | Section separation |
 
-- **Tower row height:** 40px desktop, 44px phone (row is a touch target to select a driver).
-  20 rows + header fit in 900px height.
+- **Tower row height:** 35px desktop, 44px phone (row is a touch target to select a driver).
+  Measured: all 20 rows end at ≤ 887px at 1440×900 in green, safety-car and finish states.
+  40px was the first target but doesn't fit 20 rows plus chrome in 900px.
 - **Breakpoints:** `sm` 390 (design floor), `md` 768, `lg` 1024, `xl` 1440. Nothing may
   scroll horizontally at 390px; the tower drops columns instead (see data density).
 - **Live dashboard grid (≥1024px):** tower left (fixed ~ 600px), right column = telemetry +
