@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+.next/
+out/
+frontend/test-results/
+frontend/playwright-report/
+.env
+.env.*
+!.env.example
+# Real F1 data must never be committed: recordings and FastF1 caches stay local.
+data/recordings/*
+!data/recordings/.gitkeep
+data/fastf1-cache/
+.DS_Store
+.claude-flow/
