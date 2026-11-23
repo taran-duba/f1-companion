@@ -3,16 +3,16 @@
 /* Design tokens — see DESIGN_SYSTEM.md. The app is dark only. */
 @theme {
   /* Surfaces & text */
-  --color-bg: #05070d;
-  --color-surface: #0d111c;
-  --color-raised: #161c2b;
-  --color-line: #2a3346;
-  --color-line-strong: #3d4a63;
-  --color-line-control: #65728e;
-  --color-text: #f3f5f9;
-  --color-muted: #a9b3c7;
-  --color-faint: #8590a6;
-  --color-accent: #5cc8ff;
+  --color-bg: #0e0b0d;
+  --color-surface: #161115;
+  --color-raised: #231a20;
+  --color-line: #31242b;
+  --color-line-strong: #4a3640;
+  --color-line-control: #997885;
+  --color-text: #fbf4ef;
+  --color-muted: #cdb9b9;
+  --color-faint: #a78f93;
+  --color-accent: #ffa24d;
 
   /* Status */
   --color-ok: #3ddc84;
@@ -37,7 +37,7 @@
   --color-flag-red: #ff5c5c;
 
   /* Type */
-  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-fira-code), ui-monospace, monospace;
 
   --text-micro: 0.75rem;
@@ -130,7 +130,7 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
   }
-  /* ◆ draws about a quarter smaller than ▲ at the same size in Fira Sans; scale it to match.
+  /* ◆ draws about a quarter smaller than ▲ at the same size in the UI font; scale it to match.
      Uses a transform, not font-size, so the line box and baseline (and the time beside it) don't move. */
   .glyph-diamond {
     display: inline-block;
