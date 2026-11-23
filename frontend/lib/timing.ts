@@ -155,6 +155,16 @@ export function towerRows(state: TimingState): TowerRow[] {
   for (let i = 1; i < rows.length; i++) {
     if (rows[i].interval.seconds === 0 && !rows[i].interval.leader) rows[i].interval.seconds = null;
   }
+  // Gaps are only refreshed at timing points, so a car in the pit lane keeps the gap it had
+  // before it dropped places. A gap smaller than the car ahead's is stale: show it as missing.
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const aheadGap = rows[i - 1].gap.seconds;
+    if ((r.inPit || r.pitOut) && r.gap.seconds != null && aheadGap != null && r.gap.seconds < aheadGap) {
+      r.gap.seconds = null;
+      r.interval.seconds = null;
+    }
+  }
   // Battles: within 1.0 s of the car ahead, both racing. Under SC/VSC/red flag
   // or after the chequered flag cars can't race, so nothing is a battle.
   if (racingAllowed(state)) {

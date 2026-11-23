@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useStream } from "@/lib/store";
 import { formatGap, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
-import { Chip, MarkedTime, TeamBar, TyreBadge } from "./Atoms";
+import { Chip, Diamond, MarkedTime, TeamBar, TyreBadge } from "./Atoms";
 
 interface Props {
   state: TimingState;
@@ -20,6 +21,8 @@ interface Props {
  * shares the screen with other panels, so viewport breakpoints lie.
  * always: pos, driver, interval, last lap, tyre (fits 328px)
  * ≥ 440px: + gap · ≥ 560px: + best, pits · ≥ 790px: + sectors
+ * Sector headers have a fixed width: sectors clear every lap, and auto widths made
+ * every column to their right jump as they refilled.
  */
 const COL = {
   gap: "hidden @min-[440px]:table-cell",
@@ -30,9 +33,32 @@ const COL = {
 };
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {
+  const { generation } = useStream();
   const rows = useMemo(() => towerRows(state), [state]);
-  const moves = usePositionMoves(rows);
+  const moves = usePositionMoves(rows, generation);
   const lap = state.LapCount?.CurrentLap;
+  // Roving focus: one tab stop for the whole tower (the selected row), arrows move within it.
+  const focusNum = rows.some((r) => r.num === selected) ? selected : rows[0]?.num;
+
+  /** ↑/↓ (and j/k), Home/End move focus and selection together, starting from the focused row. */
+  function onKeyDown(e: React.KeyboardEvent<HTMLTableElement>) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const from = (e.target as HTMLElement).closest<HTMLElement>("[data-num]")?.dataset.num;
+    if (!from) return;
+    const i = rows.findIndex((r) => r.num === from);
+    const to =
+      e.key === "ArrowDown" || e.key === "j" ? i + 1
+      : e.key === "ArrowUp" || e.key === "k" ? i - 1
+      : e.key === "Home" ? 0
+      : e.key === "End" ? rows.length - 1
+      : null;
+    if (to == null) return;
+    e.preventDefault();
+    const next = rows[Math.max(0, Math.min(rows.length - 1, to))];
+    if (!next) return;
+    onSelect(next.num);
+    e.currentTarget.querySelector<HTMLElement>(`button[data-num="${next.num}"]`)?.focus();
+  }
 
   if (!rows.length) {
     return (
@@ -45,9 +71,10 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   const c = (cls: string) => (compact ? "hidden" : cls);
   return (
     <div className="@container overflow-x-auto">
-      <table className="w-full border-collapse text-body lg:text-row">
+      <table className="w-full border-collapse text-body lg:text-row" onKeyDown={onKeyDown}>
         <caption className="sr-only">
-          Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry.
+          Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry; up and down arrows move between
+          drivers.
         </caption>
         <thead>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
@@ -69,16 +96,16 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
               Best
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`w-[4.75rem] py-1 pr-2 text-right ${c(COL.sectors)}`}>
               S1
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`w-[4.75rem] py-1 pr-2 text-right ${c(COL.sectors)}`}>
               S2
             </th>
-            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`w-[4.75rem] py-1 pr-2 lg:pr-3 text-right ${c(COL.sectors)}`}>
               S3
             </th>
-            <th scope="col" className="py-1 pr-2">
+            <th scope="col" className="py-1 pr-2 @min-[560px]:pl-2">
               Tyre
             </th>
             <th scope="col" className={`py-1 pr-1 text-right ${c(COL.pits)}`}>
@@ -94,6 +121,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
               key={r.num}
               row={r}
               selected={r.num === selected}
+              focusable={r.num === focusNum}
               move={moves[r.num] ?? 0}
               onSelect={onSelect}
               compact={compact}
@@ -101,7 +129,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
           ))}
         </tbody>
       </table>
-      <Legend />
+      <Legend compact={compact} />
     </div>
   );
 }
@@ -109,23 +137,27 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
 const Row = memo(function Row({
   row: r,
   selected,
+  focusable,
   move,
   onSelect,
   compact,
 }: {
   row: TowerRow;
   selected: boolean;
+  focusable: boolean;
   move: number;
   onSelect: (num: string) => void;
   compact: boolean;
 }) {
   const c = (cls: string) => (compact ? "hidden" : cls);
   const out = r.retired || r.stopped;
+  const chip = out ? (r.retired ? "DNF" : "STOP") : r.inPit ? "PIT" : r.pitOut ? "OUT" : null;
   return (
     <tr
       onClick={() => onSelect(r.num)}
-      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 hover:bg-raised lg:h-[35px] ${
-        selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : ""
+      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-[35px] ${
+        // Hover is lighter than selection so pointing at a row never reads as selecting it.
+        selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : "hover:bg-raised/50"
       } ${out ? "text-muted" : ""}`}
     >
       <td className="num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 text-title leading-none font-bold">
@@ -142,48 +174,56 @@ const Row = memo(function Row({
             onSelect(r.num);
           }}
           aria-pressed={selected}
-          aria-label={`${r.code}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
+          data-num={r.num}
+          tabIndex={focusable ? 0 : -1}
+          // Name starts with the visible text (code + chip) so voice control can target it.
+          aria-label={`${r.code}${chip ? ` ${chip}` : ""}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
           className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-[35px]"
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>
           {/* One status chip, most important first, so the driver column stays narrow. */}
-          {out ? (
-            <Chip tone="danger">{r.retired ? "DNF" : "STOP"}</Chip>
-          ) : r.inPit ? (
-            <Chip tone="warn">PIT</Chip>
-          ) : r.pitOut ? (
-            <Chip tone="muted" title="Out lap">
-              OUT
+          {chip && (
+            <Chip tone={out ? "danger" : r.inPit ? "warn" : "muted"} title={chip === "OUT" ? "Out lap" : undefined}>
+              {chip}
             </Chip>
-          ) : null}
+          )}
         </button>
       </th>
       <td className="num pr-2 lg:pr-3 text-right">
         <Interval row={r} />
       </td>
       <td className={`num pr-2 lg:pr-3 text-right ${c(COL.gap)}`}>
-        {out ? (
+        {out || (!r.gap.leader && formatGap(r.gap) === "—") ? (
           <span className="text-faint">—</span>
         ) : (
           <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: leaderLap(r) })}</span>
         )}
       </td>
       <td className="pr-2 lg:pr-3 text-right">
-        <Flash value={r.lastLap.value}>
-          {/* Yellow on ~19 of 20 last laps carries no signal: only purple/green are marked. */}
-          <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark === "yellow" ? "none" : r.lastLap.mark} />
-        </Flash>
+        {out ? (
+          // A retired car's last lap is history: no sector colour, row colour (muted).
+          <StaleTime value={r.lastLap.value} />
+        ) : (
+          <Flash value={r.lastLap.value}>
+            {/* Yellow on ~19 of 20 last laps carries no signal: only purple/green are marked. */}
+            <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark === "yellow" ? "none" : r.lastLap.mark} />
+          </Flash>
+        )}
       </td>
       <td className={`pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
-        <MarkedTime value={r.bestLap.value} mark={r.bestLap.mark} />
+        {out && r.bestLap.mark !== "purple" ? (
+          <StaleTime value={r.bestLap.value} />
+        ) : (
+          <MarkedTime value={r.bestLap.value} mark={r.bestLap.mark} />
+        )}
       </td>
       {r.sectors.map((s, i) => (
         <td key={i} className={`${i === 2 ? "pr-2 lg:pr-3" : "pr-2"} text-right text-body ${c(COL.sectors)}`}>
-          <MarkedTime value={s.value} mark={s.mark} sector />
+          {out ? <StaleTime value={s.value} /> : <MarkedTime value={s.value} mark={s.mark} sector />}
         </td>
       ))}
-      <td className="pr-2">
+      <td className="pr-2 @min-[560px]:pl-2">
         <span className="flex items-center gap-1.5">
           <TyreBadge compound={r.compound} />
           <span className={`num text-small text-muted ${compact ? "" : COL.age}`}>
@@ -201,6 +241,7 @@ function Interval({ row: r }: { row: TowerRow }) {
   if (r.retired || r.stopped) return <span className="text-faint">—</span>;
   if (r.position === 1 || r.interval.leader) return <span className="text-muted">Leader</span>;
   const text = formatGap(r.interval);
+  if (text === "—") return <span className="text-faint">—</span>;
   if (r.battle) {
     return (
       <span
@@ -233,13 +274,17 @@ function PositionMove({ move }: { move: number }) {
   );
 }
 
+/** A time for a car that is out: plain, inheriting the row's muted colour. */
+function StaleTime({ value }: { value: string }) {
+  return value ? <span className="num">{value}</span> : <span className="text-faint">—</span>;
+}
+
 /** Brief background fade when the value changes (disabled by reduced motion in CSS). */
 function Flash({ value, children }: { value: string; children: React.ReactNode }) {
   const [key, setKey] = useState(0);
   const prev = useRef(value);
   useEffect(() => {
     if (prev.current !== value && prev.current !== "" && value !== "") {
-       
       setKey((k) => k + 1);
     }
     prev.current = value;
@@ -251,27 +296,38 @@ function Flash({ value, children }: { value: string; children: React.ReactNode }
   );
 }
 
-/** Tracks position changes and keeps the arrow for a few seconds. */
-function usePositionMoves(rows: TowerRow[]): Record<string, number> {
+/**
+ * Tracks position changes and keeps the arrow for a few seconds. A new snapshot
+ * (`generation`: reconnect or replay seek) replaces the running order wholesale, so it
+ * resets the baseline instead of reporting every car as having gained or lost places.
+ */
+function usePositionMoves(rows: TowerRow[], generation: number): Record<string, number> {
   const last = useRef<Record<string, number>>({});
+  const lastGen = useRef(generation);
   const [moves, setMoves] = useState<Record<string, { d: number; at: number }>>({});
   useEffect(() => {
+    if (lastGen.current !== generation) {
+      lastGen.current = generation;
+      last.current = Object.fromEntries(rows.map((r) => [r.num, r.position]));
+      setMoves({});
+      return;
+    }
     const now = Date.now();
     const next: Record<string, { d: number; at: number }> = {};
     let changed = false;
     for (const r of rows) {
       const before = last.current[r.num];
-      if (before != null && before !== r.position && !r.retired) {
+      // 99 = no position yet (towerRows' fallback): the first real one is not a move.
+      if (before != null && before !== 99 && r.position !== 99 && before !== r.position && !r.retired) {
         next[r.num] = { d: before - r.position, at: now };
         changed = true;
       }
       last.current[r.num] = r.position;
     }
     if (changed) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from previous render's positions
       setMoves((m) => ({ ...m, ...next }));
     }
-  }, [rows]);
+  }, [rows, generation]);
   useEffect(() => {
     const id = setInterval(() => {
       const cutoff = Date.now() - 5000;
@@ -285,16 +341,20 @@ function usePositionMoves(rows: TowerRow[]): Record<string, number> {
   return useMemo(() => Object.fromEntries(Object.entries(moves).map(([k, v]) => [k, v.d])), [moves]);
 }
 
-function Legend() {
+function Legend({ compact }: { compact: boolean }) {
   return (
     <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-muted">
       <span>
-        <span className="text-sector-purple">◆ purple</span> fastest overall
+        <span className="text-sector-purple">
+          <Diamond /> purple
+        </span>{" "}
+        fastest overall
       </span>
       <span>
         <span className="text-sector-green">▲ green</span> personal best
       </span>
-      <span>
+      {/* Yellow only appears in the sector columns (last laps stay plain), so the key follows them. */}
+      <span className={compact ? "hidden" : "hidden @min-[790px]:inline"}>
         <span className="text-sector-yellow">yellow</span> slower sector
       </span>
       <span>

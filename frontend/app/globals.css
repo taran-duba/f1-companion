@@ -106,6 +106,17 @@
   button:not(:disabled), [role="button"], select, summary {
     cursor: pointer;
   }
+  /* Phones: keep focused or scrolled-to content clear of the fixed selected-driver bar. */
+  @media (width < 64rem) {
+    html:has([data-driver-bar]) {
+      scroll-padding-bottom: 5rem;
+    }
+  }
+  /* Accent as the resting outline colour too: `transition-colors` animates
+     outline-color, so otherwise the ring flashes from currentColor on focus. */
+  *, ::before, ::after {
+    outline-color: var(--color-accent);
+  }
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
@@ -119,11 +130,11 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
   }
-  .label-micro {
-    font-size: var(--text-micro);
-    line-height: var(--text-micro--line-height);
-    font-weight: 600;
-    color: var(--color-muted);
+  /* ◆ draws about a quarter smaller than ▲ at the same size in Fira Sans; scale it to match.
+     Uses a transform, not font-size, so the line box and baseline (and the time beside it) don't move. */
+  .glyph-diamond {
+    display: inline-block;
+    transform: scale(1.33);
   }
 }
 

@@ -40,3 +40,27 @@ describe("battles", () => {
     expect(rows[1].battle).toBe(false);
   });
 });
+
+describe("stale pit gaps", () => {
+  const lines = {
+    "1": { Position: "1", GapToLeader: "LAP 30", IntervalToPositionAhead: { Value: "LAP 30" } },
+    "2": { Position: "2", GapToLeader: "+27.513", IntervalToPositionAhead: { Value: "+27.513" } },
+    "3": { Position: "3", GapToLeader: "+17.860", IntervalToPositionAhead: { Value: "+2.100" }, InPit: true },
+  };
+
+  it("drops a pitting car's gap when it is smaller than the car ahead's", () => {
+    const rows = towerRows(race("1", lines));
+    expect(rows[2].gap.seconds).toBeNull();
+    expect(rows[2].interval.seconds).toBeNull();
+  });
+
+  it("keeps a pitting car's gap when it is consistent", () => {
+    const rows = towerRows(race("1", { ...lines, "3": { ...lines["3"], GapToLeader: "+30.000" } }));
+    expect(rows[2].gap.seconds).toBe(30);
+  });
+
+  it("keeps a smaller gap for a car on track", () => {
+    const rows = towerRows(race("1", { ...lines, "3": { ...lines["3"], InPit: false } }));
+    expect(rows[2].gap.seconds).toBe(17.86);
+  });
+});

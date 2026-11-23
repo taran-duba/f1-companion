@@ -62,14 +62,13 @@ export function ConnectionPill() {
 
   return (
     <div className="flex items-center gap-2">
-      <p
-        role="status"
-        aria-live="polite"
-        className={`flex min-h-8 items-center gap-2 rounded-full border px-3 text-small font-semibold ${toneClass}`}
-      >
+      <p className={`flex min-h-8 items-center gap-2 rounded-full border px-3 text-small font-semibold ${toneClass}`}>
         <StatusGlyph tone={tone} pulsing={pulsing} replay={src?.state} />
         <span>
-          {label}
+          {/* Only the state is live; the ticking countdown stays out so it isn't re-announced every second. */}
+          <span role="status" aria-live="polite">
+            {label}
+          </span>
           {detail && <span className="ml-1 font-normal text-muted num">{detail}</span>}
         </span>
       </p>

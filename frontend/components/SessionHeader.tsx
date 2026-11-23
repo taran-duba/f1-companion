@@ -68,7 +68,7 @@ export function SessionHeader({ state, bleed = true }: { state: TimingState; ble
                 <span className="num font-bold">{r.position}</span>
                 <TeamBar colour={r.teamColour} className="h-5" />
                 <span className="font-semibold">{r.code}</span>
-                <span className="hidden text-muted sm:inline">{r.name}</span>
+                <span className="hidden text-muted md:inline">{r.name}</span>
               </span>
             ))}
           </p>
@@ -98,7 +98,7 @@ export function SessionHeader({ state, bleed = true }: { state: TimingState; ble
                 <span>
                   Air <strong className="font-semibold">{w.air != null ? `${w.air.toFixed(0)}°` : "—"}</strong>
                 </span>
-                <span className="hidden md:inline">
+                <span>
                   Track <strong className="font-semibold">{w.track != null ? `${w.track.toFixed(0)}°` : "—"}</strong>
                 </span>
                 <span className={w.rain ? "font-semibold text-tyre-wet" : "text-muted"}>

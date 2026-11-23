@@ -102,7 +102,7 @@ export function RaceControlTicker({ state, onOpen }: { state: TimingState; onOpe
     <button
       type="button"
       onClick={onOpen}
-      className="mb-2 flex min-h-11 w-full items-center gap-2 rounded-panel border border-line-strong bg-surface px-3 text-left"
+      className="mb-2 flex min-h-11 w-full items-center gap-2 rounded-panel border border-line-strong bg-surface px-3 text-left transition-colors duration-150 hover:bg-raised active:bg-raised"
     >
       <span className="sr-only">Latest race control message: </span>
       {latest.Lap != null && <span className="num shrink-0 font-mono text-micro text-faint">L{latest.Lap}</span>}
@@ -119,7 +119,7 @@ function sentence(s: string) {
   const lower = s.toLowerCase();
   return lower
     .replace(/(^|[.!?]\s+)([a-z])/g, (_, p, c) => p + c.toUpperCase())
-    .replace(/\b(drs|vsc|sc|pu|fia)\b/gi, (m) => m.toUpperCase())
+    .replace(/\b(drs|vsc|sc|pu|fia|f1)\b/gi, (m) => m.toUpperCase())
     .replace(/\bcar (\d+) \(([a-z]{3})\)/g, (_, n, c) => `car ${n} (${c.toUpperCase()})`)
     .replace(/\(([a-z]{3})\)/g, (_, c) => `(${c.toUpperCase()})`);
 }

@@ -46,7 +46,7 @@ export default function LivePage() {
       <>
         <SessionHeader state={state} />
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)] gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,1fr)]">
-          <section aria-label="Timing tower" data-tower className="min-w-0">
+          <section aria-label="Timing tower" className="min-w-0">
             <TimingTower state={state} selected={selected} onSelect={select} />
           </section>
           <div className="flex min-w-0 flex-col gap-4">
@@ -72,7 +72,7 @@ export default function LivePage() {
     <div className="pb-20">
       <SessionHeader state={state} />
       <RaceControlTicker state={state} onOpen={() => openTab("control")} />
-      <section aria-label="Timing tower" data-tower className="min-w-0">
+      <section aria-label="Timing tower" className="min-w-0">
         <TimingTower state={state} selected={selected} onSelect={select} />
       </section>
       <div ref={tabsRef} className="mt-4 scroll-mt-2">
@@ -104,25 +104,31 @@ function TabBody({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const KBD = "inline-flex h-5 min-w-5 items-center justify-center rounded-[3px] border border-line-control px-1 font-sans text-micro text-muted";
+
 function KeyHint() {
   return (
-    <span>
-      <kbd className="font-sans">j</kbd> <kbd className="font-sans">k</kbd> change driver
+    <span className="inline-flex items-center gap-1">
+      <kbd className={KBD}>j</kbd>
+      <kbd className={KBD}>k</kbd>
+      <span className="ml-0.5">change driver</span>
     </span>
   );
 }
 
-/** j/k (or ↑/↓ with focus in the tower) move the selection through the running order. */
+/**
+ * j/k anywhere on the page move the selection through the running order. Inside the
+ * tower the tower's own handler (arrows, j/k, Home/End, moving focus too) wins: it
+ * calls preventDefault, so this listener skips the event instead of moving twice.
+ */
 function useDriverKeys(state: TimingState | null, selected: string | null, select: (n: string) => void) {
   useEffect(() => {
     if (!state) return;
     function onKey(e: KeyboardEvent) {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute("role") === "slider")) return;
-      // Arrows only inside the tower (so they still scroll the page elsewhere); j/k anywhere.
-      const inTower = !!t?.closest("[data-tower]");
-      const dir = e.key === "j" || (inTower && e.key === "ArrowDown") ? 1 : e.key === "k" || (inTower && e.key === "ArrowUp") ? -1 : 0;
+      const dir = e.key === "j" ? 1 : e.key === "k" ? -1 : 0;
       if (!dir || !state) return;
       const rows = towerRows(state);
       const i = rows.findIndex((r) => r.num === selected);

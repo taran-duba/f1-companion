@@ -15,6 +15,11 @@ const MARK_LABEL: Record<SectorMark, string> = {
   none: "",
 };
 
+/** The purple "fastest overall" ◆, scaled to the same visual size as the green ▲. */
+export function Diamond() {
+  return <span className="glyph-diamond">◆</span>;
+}
+
 /** A time coloured by sector convention, with a glyph so colour isn't the only cue. */
 export function MarkedTime({ value, mark }: { value: string; mark: SectorMark; sector?: boolean }) {
   if (!value) return <span className="text-faint">—</span>;
@@ -23,7 +28,7 @@ export function MarkedTime({ value, mark }: { value: string; mark: SectorMark; s
     <span className={`num inline-flex items-center justify-end gap-1 ${MARK_CLASS[mark]}`}>
       {MARK_GLYPH[mark] && (
         <span aria-hidden="true" className="text-[0.75rem] leading-none">
-          {MARK_GLYPH[mark]}
+          {mark === "purple" ? <Diamond /> : MARK_GLYPH[mark]}
         </span>
       )}
       <span>{value}</span>
@@ -58,7 +63,8 @@ export function TyreBadge({ compound, size = 24 }: { compound: Compound; size?: 
         height: size,
         border: `2px solid ${t.colour}`,
         color: t.colour,
-        fontSize: Math.round(size * 0.52),
+        // Never under the 12px text floor, even on the small badges.
+        fontSize: Math.max(12, Math.round(size * 0.52)),
       }}
     >
       <span aria-hidden="true">{t.letter}</span>

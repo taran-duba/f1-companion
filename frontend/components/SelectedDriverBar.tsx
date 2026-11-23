@@ -2,7 +2,7 @@
 
 import { drsLabel, formatGap, towerRows } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
-import { TeamBar, TyreBadge } from "./timing/Atoms";
+import { Chip, TeamBar, TyreBadge } from "./timing/Atoms";
 
 /**
  * Phone-only bar pinned to the bottom (thumb zone) showing the selected
@@ -14,19 +14,28 @@ export function SelectedDriverBar({ state, selected, onOpen }: { state: TimingSt
   if (!row) return null;
   const car = state.CarData?.Cars?.[row.num];
   const drs = car ? drsLabel(car.drs) : null;
+  const out = row.retired || row.stopped;
+  // Same wording as the tower's interval column: P1 is the leader even before the first gap arrives.
+  const interval = row.position === 1 ? "Leader" : formatGap(row.interval);
+  const place = out ? (row.retired ? "retired" : "stopped") : `P${row.position}`;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line-strong bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <div data-driver-bar className="fixed inset-x-0 bottom-0 z-20 border-t border-line-strong bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <button
         type="button"
         onClick={onOpen}
-        className="mx-auto flex min-h-14 w-full max-w-[1600px] items-center gap-3 px-4 text-left"
-        aria-label={`${row.code} selected, P${row.position}. Show telemetry`}
+        className="mx-auto flex min-h-14 w-full max-w-[1600px] items-center gap-3 px-4 text-left transition-colors duration-150 active:bg-raised"
+        aria-label={`${row.code} selected, ${place}. Show telemetry`}
       >
-        <span className="num w-8 text-right text-title font-bold">{row.retired ? "—" : row.position}</span>
+        <span className="num w-8 text-right text-title font-bold">{out ? <span className="text-faint">—</span> : row.position}</span>
         <TeamBar colour={row.teamColour} />
         <span className="font-semibold">{row.code}</span>
         <TyreBadge compound={row.compound} size={22} />
-        <span className="num text-small text-muted">{formatGap(row.interval, { leaderLabel: "Leader" })}</span>
+        {out ? (
+          // Same chip as the tower row, so the two never disagree on wording.
+          <Chip tone="danger">{row.retired ? "DNF" : "STOP"}</Chip>
+        ) : (
+          <span className={`num text-small ${interval === "—" ? "text-faint" : "text-muted"}`}>{interval}</span>
+        )}
         {car ? (
           <span className="num ml-auto flex items-baseline gap-3">
             <span className="text-title font-bold">
