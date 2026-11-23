@@ -50,7 +50,7 @@ export default function LivePage() {
     return (
       <>
         <SessionHeader state={state} />
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)] gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,1fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)] gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(380px,1fr)]">
           <section aria-label="Timing tower" className="min-w-0">
             <TimingTower state={state} selected={selected} onSelect={select} />
           </section>

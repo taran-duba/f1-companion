@@ -40,9 +40,9 @@ const W = {
 const COL = {
   gap: "hidden @min-[440px]:table-cell",
   best: "hidden @min-[560px]:table-cell",
-  sectors: "hidden @min-[790px]:table-cell",
+  sectors: "hidden @min-[835px]:table-cell",
   pits: "hidden @min-[560px]:table-cell",
-  age: "hidden @min-[340px]:inline",
+  age: "hidden @min-[380px]:inline",
 };
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {
@@ -84,7 +84,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   const c = (cls: string) => (compact ? "hidden" : cls);
   return (
     <div className="@container overflow-x-auto">
-      <table className="w-full border-collapse text-body lg:text-row" onKeyDown={onKeyDown}>
+      <table className="w-full border-collapse text-[0.9375rem] @max-[340px]:text-[0.875rem] @min-[400px]:text-body lg:text-row" onKeyDown={onKeyDown}>
         <caption className="sr-only">
           Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry; up and down arrows move between
           drivers.

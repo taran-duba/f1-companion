@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Semi_Condensed, Fira_Code } from "next/font/google";
+import { Fira_Code, Space_Grotesk } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { StreamProvider } from "@/lib/store";
 import { SelectionProvider } from "@/lib/selection";
 import "./globals.css";
 
-// UI font. To switch to Space Grotesk: import Space_Grotesk (weights 400-700),
-// use it here with the same variable name, and nothing else needs to change.
-const uiFont = Barlow_Semi_Condensed({
+// UI font. Swap the family here; the variable name keeps everything else unchanged.
+const uiFont = Space_Grotesk({
   variable: "--font-ui",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
