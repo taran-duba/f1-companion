@@ -83,3 +83,17 @@ status chips and overflowed the tower), fixed by container-query columns and
 a single status chip. The 2026 grid has 22 cars: at 1440×900 the last two
 rows sit just below the fold (the demo's 20 fit). Accepted; rows stay 35px.
 No real data was saved or committed.
+
+## D8 — Keyboard shortcuts stay inside the tower
+The critique asked for faster driver switching. A page-wide `j`/`k` listener was
+added, then removed in the Step D audit: single-letter shortcuts that work
+anywhere violate WCAG 2.1.4 (Character Key Shortcuts). Now the tower is one tab
+stop; with focus in it, ↑/↓ or j/k move the selection and Home/End jump to the
+first/last car. `/replay` keeps Space and ←/→ because they only act when focus
+is not in a text field, select or button.
+
+## D9 — Shutdown with open browsers
+SSE streams never end on their own, so uvicorn's graceful shutdown waited
+forever while a dashboard was open (found by the end-to-end journey). The
+server now ends every stream when it receives SIGINT/SIGTERM (browsers
+reconnect with backoff) and has a 3 s graceful-shutdown timeout as a fallback.

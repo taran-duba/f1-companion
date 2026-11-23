@@ -1,56 +1,109 @@
-# Status
+# Status — morning report
 
-_Last updated: 2026-11-23 ~04:30 (in progress — overnight run). Note: the run hit a usage limit around 03:00 and paused until ~03:50._
+_Last updated 2026-11-23. The overnight run is finished. Everything is committed;
+nothing is deployed._
 
-## Works
-- Live feed probe done first (DECISIONS.md D1): legacy `/signalr` is 401; SignalR Core
-  serves timing anonymously but withholds `CarData.z` / `Position.z`.
-- Backend core: decoder, deep merge, recording format, state store with derived views,
-  replay (speed/pause/seek), SSE server, live client (core + legacy), recorder. 76 tests pass.
-- Frontend core: SSE wrapper with backoff + snapshot reset, timing tower, session header,
-  race control, live page. 14 vitest tests pass.
-- End-to-end check: backend replaying the mini test fixture → tower renders at 390/1440,
-  no console errors, no horizontal scroll.
+## TL;DR
 
-- Synthetic demo race: 50 laps, 20 fictional drivers, safety car (laps ~22–26), rain then
-  drying, 1–2 stops each, one DNF, blue flags, penalties. 8.2 MB gzipped, deterministic.
-- FastF1 converter: reviewed; tested on a synthetic FastF1-shaped session (no F1 TV login here).
-- Backend: 103 tests pass.
-- Live page against the demo: all 20 tower rows fit at 1440×900; phone layout is tower
-  first, then tabs.
+- **The app works end to end** on the synthetic demo race, on recordings, and against
+  **F1's real live endpoint** (tested: timing, tower, header and race control all work
+  without a login).
+- **Live car telemetry and the track map need an F1 TV token** in live mode. F1 has locked
+  `CarData.z` / `Position.z` (and the old `/signalr` endpoint, and the static archive that
+  FastF1 uses). Details in DECISIONS.md D1 and D7. Nothing tries to get around this.
+- All design steps A–E ran. Tests: backend 109, frontend 74, plus a 13-step browser
+  journey on a fresh clone with the production build. All pass.
 
-- All pages built and independently reviewed (M5): telemetry panel with rolling chart,
-  track map traced from positions, gap chart + battle list, strategy view, lap time chart,
-  /driver overview, /driver/[code], /replay with marked seek bar, /settings.
-  Backend 105 tests, frontend 63 tests, `next build` passes.
-- Fixed after review: phone overflow on the live page (grid column min width), pit-in laps
-  showing the new compound, partial laps saved as "best" telemetry trace after a seek.
+Run it: README → "Run the demo". Two terminals, then open http://localhost:3000.
 
-- Design Step C: impeccable critique (dual-agent, 26/40, snapshot in `.impeccable/critique/`).
-  All P0–P2 findings fixed: race control moved to the top of the right column, phone ticker,
-  sticky tabs, selected-driver bar, quiet green / loud abnormal flag frame, battles only when
-  racing, neutral last-lap colour, compact live telemetry, 12px glyph minimum, a11y names.
-- Real live feed checked end-to-end (DECISIONS.md D7): works without a token for timing;
-  found and fixed a tower overflow that only real data triggered.
+## What works
 
-- Design Step C: impeccable polish done (three areas, two independent verifiers). Notable:
-  one-tab-stop tower with arrow/j/k navigation, no false position arrows after seeks,
-  stale pit-lane gaps hidden, "Retry now" when the backend is down, purple fastest-lap
-  traces, SC shading on lap charts. Frontend 73 tests, backend 108 tests, build passes,
-  10/10 page×width layout checks clean.
-- A usage limit interrupted the polish run once; it resumed on its own while I had
-  restarted it, so two polish passes ran concurrently. Both finished, both verifiers passed,
-  and the merged result was rechecked before committing.
+**Data**
+- Live client (SignalR Core by default, legacy `/signalr` selectable). It reconnects with
+  backoff and jitter, recycles a stalled socket, skips malformed frames, starts from a fresh
+  snapshot on every reconnect, and accepts an optional `F1TV_TOKEN`.
+- Decoder for `.z` topics; deep merge with index-keyed list updates.
+- Replay at 0.5×–30×, pause and seek. A forward seek applies only the gap. A backward seek
+  rebuilds from the start, skipping telemetry samples older than 150 s. Measured on the
+  demo: about 1.0 s to mid-race, about 1.9 s across the whole race.
+- Recorder writes live sessions in the replay format.
+- Synthetic demo race (committed, deterministic): 50 laps, 20 fictional drivers, safety
+  car, VSC, rain and drying, 1–2 stops each, a DNF, blue flags, a penalty.
+- FastF1 converter and loader. It can't load real data here (needs an F1 TV login) and
+  says so clearly.
 
-## In progress
-- Design Step D: web interface guidelines audit (manual; skill not installed).
+**Server**
+- FastAPI streams to the browser over SSE: a snapshot first, then coalesced patches
+  every 200 ms.
+- Lap history, the circuit outline, rolling telemetry and per-lap traces are derived
+  server-side.
+- Shuts down promptly even while browsers are connected (a bug found tonight).
 
-## Tooling notes
-- `web-design-guidelines` skill: **not installed**. Step D will be done manually against
-  common web interface guidelines (accessibility, contrast, focus, touch targets).
-- `webapp-testing` skill: **not installed**. Step E uses Playwright directly via
-  `scripts/screenshot.py` (screenshots at 390 and 1440 + automated overflow, console-error
-  and touch-target checks).
-- `ui-ux-pro-max`, `frontend-design` and `impeccable` skills are installed and used.
-- Impeccable reported an update (v4.0.2 → v4.10.0). Not applied: you asked me not to stop for
-  questions, and the update only takes effect next session. Run `npx impeccable update` if wanted.
+**Dashboard**
+- `/`:
+  - timing tower with sector colours plus glyphs, tyres with letters and age, pits, PIT, OUT and DNF;
+  - session header with track status, weather, and a podium at the finish;
+  - marshal-panel flag band;
+  - race control;
+  - compact live telemetry;
+  - track map, gap chart and battles.
+  - On phone: tower first, a race-control ticker, sticky tabs, and a selected-driver bar.
+- `/driver` and `/driver/[code]`: tyre strategy chart, race order, lap time chart with
+  SC shading, sector table, stints, last vs best lap traces.
+- `/replay`: sources (demo, recordings, FastF1), transport with a marked seek bar and
+  "jump to safety car".
+- `/settings`: data source, connection details, token status (never the value), recorder
+  switch, how to open it on a phone.
+
+## Design process (as briefed)
+
+| Step | Done with | Output |
+|---|---|---|
+| A | `ui-ux-pro-max` skill | `DESIGN_SYSTEM.md`, tokens in `frontend/app/globals.css` |
+| B | `frontend-design` skill | `DESIGN_PLAN.md` (includes revisions after a self-review) |
+| C | `impeccable` skill: critique (two independent assessments, 26/40), fixes, polish | `.impeccable/critique/`; every P0–P2 fixed |
+| D | **`web-design-guidelines` not installed**, so a manual audit against standard web interface guidelines | 34 findings; 14 confirmed high/medium plus 3 downgraded-but-real, all fixed |
+| E | **`webapp-testing` not installed**, so Playwright directly (`scripts/screenshot.py`) | every page at 390 and 1440, reviewed by eye; 3 fixes confirmed with new screenshots |
+
+## Bugs found by testing, not by tests
+
+These were each found by running the app, not by unit tests:
+- **Tower overflow with real data.** A retired car still flagged as in the pit showed two
+  status chips and pushed the tower wider than its column. Found against the real live feed.
+- **Stale pit-lane gaps out of order.** A pitting car kept a gap smaller than the car ahead
+  of it. Found by stepping through the demo.
+- **Backend hung on Ctrl+C or SIGTERM while a browser was open.** Uvicorn waited forever
+  for the SSE streams. Found by the end-to-end journey.
+
+## Known issues / limitations
+
+- **F1 TV token path is untested.** No subscription was available.
+- **22-car grid at 1440×900.** In live mode with the 2026 grid, the last two tower rows
+  sit just below the fold. The demo's 20 fit.
+- **Race-control lap labels differ by width.** The phone ticker shows "L31"; the full
+  feed shows "Lap 31".
+- **Pit wording differs by place.** "PIT" in the tower, "In pit" on driver cards.
+- **Replay at 768–1024 px.** The page is a single column, so the tower comes after the
+  sources panel.
+- **No authentication.** The backend binds to 127.0.0.1 by default. See README before
+  using `--host 0.0.0.0`.
+- **Two Retry buttons when the backend is down.** One next to the header pill, one in the
+  card. Harmless, slightly redundant.
+- **Overnight hiccup.** A usage limit paused the run twice. One polish workflow resumed by
+  itself while I had restarted it, so two polish passes ran on the same files at once. Both
+  passed their verifiers, and the merged result was re-tested before committing.
+- **Impeccable update skipped.** The skill offered an update (v4.0.2 → v4.10.0). I didn't
+  apply it because you asked me not to stop for questions. `npx impeccable update` if wanted.
+
+## What I'd do next
+
+1. Try `F1TV_TOKEN` during a real session. If telemetry arrives, check the map and
+   telemetry panels against real data rates.
+2. Record a real race weekend with the recorder and replay it, especially qualifying
+   (different gap fields) and a red-flag restart. The demo doesn't cover those.
+3. Fit 22 rows at 900px height: a denser row variant when the field is over 20, or a
+   collapsible session header.
+4. Optional URL state for the selected driver (`/?driver=PEM`) so a phone and a laptop can
+   share a view.
+5. If hosting: follow the README's always-on notes. Run ingest under systemd or Docker,
+   put the API behind a reverse proxy with buffering off, and add auth.
