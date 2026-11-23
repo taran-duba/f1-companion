@@ -151,15 +151,31 @@ export function towerRows(state: TimingState): TowerRow[] {
     }
   }
   if (fastest) fastest.bestLap.mark = "purple";
-  // Battles: within 1.0 s of the car ahead, both running.
+  // A zero interval to a car ahead is a feed artefact (e.g. while pitting), not a tie.
   for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const s = r.interval.seconds;
-    if (s != null && s > 0 && s < 1.0 && !r.retired && !r.inPit && !rows[i - 1].retired && !rows[i - 1].inPit) {
-      r.battle = true;
+    if (rows[i].interval.seconds === 0 && !rows[i].interval.leader) rows[i].interval.seconds = null;
+  }
+  // Battles: within 1.0 s of the car ahead, both racing. Under SC/VSC/red flag
+  // or after the chequered flag cars can't race, so nothing is a battle.
+  if (racingAllowed(state)) {
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      const ahead = rows[i - 1];
+      const s = r.interval.seconds;
+      if (s != null && s > 0 && s < 1.0 && isRacing(r) && isRacing(ahead)) r.battle = true;
     }
   }
   return rows;
+}
+
+function isRacing(r: TowerRow): boolean {
+  return !r.retired && !r.stopped && !r.inPit && !r.pitOut;
+}
+
+/** False under safety car, VSC, red flag, or once the race is over. */
+export function racingAllowed(state: TimingState): boolean {
+  const tone = trackStatus(state).tone;
+  return tone === "green" || tone === "yellow" || tone === "unknown";
 }
 
 export interface TrackStatusView {

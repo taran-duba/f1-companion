@@ -30,13 +30,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <FlagBand tone={status?.tone ?? "unknown"} label={status?.label ?? "Track status unknown"} />
       <header className="border-b border-line bg-bg">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-1 lg:px-6">
-          <Link href="/" className="mr-auto text-title font-bold tracking-tight text-text">
+          <Link href="/" className="mr-auto inline-flex min-h-11 items-center text-title font-bold tracking-tight text-text lg:min-h-10">
             F1 Companion
           </Link>
-          <div className="order-2 sm:order-3">
+          <div className="order-2 md:order-3">
             <ConnectionPill />
           </div>
-          <nav aria-label="Main" className="order-3 w-full sm:order-2 sm:w-auto">
+          <nav aria-label="Main" className="order-3 w-full md:order-2 md:w-auto">
             <ul className="flex gap-1">
               {NAV.map((item) => {
                 const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

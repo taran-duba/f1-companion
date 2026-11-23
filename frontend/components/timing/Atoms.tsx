@@ -16,18 +16,17 @@ const MARK_LABEL: Record<SectorMark, string> = {
 };
 
 /** A time coloured by sector convention, with a glyph so colour isn't the only cue. */
-export function MarkedTime({ value, mark, sector = false }: { value: string; mark: SectorMark; sector?: boolean }) {
+export function MarkedTime({ value, mark }: { value: string; mark: SectorMark; sector?: boolean }) {
   if (!value) return <span className="text-faint">—</span>;
-  const shown = sector ? value : value;
   const label = MARK_LABEL[mark];
   return (
     <span className={`num inline-flex items-center justify-end gap-1 ${MARK_CLASS[mark]}`}>
       {MARK_GLYPH[mark] && (
-        <span aria-hidden="true" className="text-[0.7em] leading-none">
+        <span aria-hidden="true" className="text-[0.75rem] leading-none">
           {MARK_GLYPH[mark]}
         </span>
       )}
-      <span>{shown}</span>
+      <span>{value}</span>
       {label && <span className="sr-only">({label})</span>}
     </span>
   );

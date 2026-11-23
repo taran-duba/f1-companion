@@ -67,7 +67,7 @@ export function ConnectionPill() {
         aria-live="polite"
         className={`flex min-h-8 items-center gap-2 rounded-full border px-3 text-small font-semibold ${toneClass}`}
       >
-        <StatusGlyph tone={tone} pulsing={pulsing} />
+        <StatusGlyph tone={tone} pulsing={pulsing} replay={src?.state} />
         <span>
           {label}
           {detail && <span className="ml-1 font-normal text-muted num">{detail}</span>}
@@ -86,7 +86,7 @@ export function ConnectionPill() {
   );
 }
 
-function StatusGlyph({ tone, pulsing }: { tone: string; pulsing: boolean }) {
+function StatusGlyph({ tone, pulsing, replay }: { tone: string; pulsing: boolean; replay?: string }) {
   // Shape differs per state so colour isn't the only signal.
   if (tone === "danger")
     return (
@@ -98,6 +98,18 @@ function StatusGlyph({ tone, pulsing }: { tone: string; pulsing: boolean }) {
     return (
       <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
         <circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="5 3" />
+      </svg>
+    );
+  if (tone === "accent" && replay === "paused")
+    return (
+      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
+        <path d="M3 2h2v8H3zM7 2h2v8H7z" fill="currentColor" />
+      </svg>
+    );
+  if (tone === "accent" && replay === "ended")
+    return (
+      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
+        <rect x="2.5" y="2.5" width="7" height="7" fill="currentColor" />
       </svg>
     );
   if (tone === "accent")

@@ -123,14 +123,13 @@ const Row = memo(function Row({
   const out = r.retired || r.stopped;
   return (
     <tr
-      aria-selected={selected}
       onClick={() => onSelect(r.num)}
-      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 hover:bg-raised lg:h-9 ${
+      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 hover:bg-raised lg:h-[35px] ${
         selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : ""
       } ${out ? "text-muted" : ""}`}
     >
       <td className="num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 text-title leading-none font-bold">
-        <span className="inline-flex items-center justify-end gap-0.5">
+        <span className="inline-flex items-baseline justify-end gap-0.5">
           <PositionMove move={move} />
           {out ? <span className="text-small text-muted">—</span> : r.position}
         </span>
@@ -143,8 +142,8 @@ const Row = memo(function Row({
             onSelect(r.num);
           }}
           aria-pressed={selected}
-          aria-label={`${r.name}, ${r.team}${selected ? ", selected" : ""}`}
-          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-9"
+          aria-label={`${r.code}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
+          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-[35px]"
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>
@@ -160,12 +159,13 @@ const Row = memo(function Row({
         {out ? (
           <span className="text-faint">—</span>
         ) : (
-          <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: "Leader" })}</span>
+          <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: leaderLap(r) })}</span>
         )}
       </td>
       <td className="pr-2 lg:pr-3 text-right">
         <Flash value={r.lastLap.value}>
-          <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark} />
+          {/* Yellow on ~19 of 20 last laps carries no signal: only purple/green are marked. */}
+          <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark === "yellow" ? "none" : r.lastLap.mark} />
         </Flash>
       </td>
       <td className={`pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
@@ -200,7 +200,7 @@ function Interval({ row: r }: { row: TowerRow }) {
         title="Within one second of the car ahead"
         className="inline-flex items-center gap-0.5 rounded-chip px-0.5 font-semibold text-warn lg:gap-1 lg:px-1 outline outline-1 outline-warn/70"
       >
-        <span aria-hidden="true" className="text-[0.75em]">
+        <span aria-hidden="true" className="text-[0.75rem]">
           ⇢
         </span>
         {text}
@@ -214,12 +214,12 @@ function Interval({ row: r }: { row: TowerRow }) {
 function PositionMove({ move }: { move: number }) {
   if (!move) return <span aria-hidden="true" className="inline-block w-3" />;
   return move > 0 ? (
-    <span className="w-3 text-[0.55em] text-ok" title={`Gained ${move}`}>
+    <span className="w-3 text-[0.75rem] leading-none text-ok" title={`Gained ${move}`}>
       <span aria-hidden="true">▲</span>
       <span className="sr-only">gained {move}</span>
     </span>
   ) : (
-    <span className="w-3 text-[0.55em] text-danger" title={`Lost ${-move}`}>
+    <span className="w-3 text-[0.75rem] leading-none text-danger" title={`Lost ${-move}`}>
       <span aria-hidden="true">▼</span>
       <span className="sr-only">lost {-move}</span>
     </span>
@@ -288,14 +288,19 @@ function Legend() {
         <span className="text-sector-green">▲ green</span> personal best
       </span>
       <span>
-        <span className="text-sector-yellow">yellow</span> slower
+        <span className="text-sector-yellow">yellow</span> slower sector
       </span>
       <span>
         <span className="text-warn">⇢</span> within 1 s of car ahead
       </span>
-      <Link href="/driver" className="ml-auto underline underline-offset-4 hover:text-text">
+      <Link href="/driver" className="-my-3 ml-auto inline-flex min-h-11 items-center underline underline-offset-4 hover:text-text lg:my-0 lg:min-h-0">
         All drivers
       </Link>
     </p>
   );
+}
+
+function leaderLap(r: TowerRow): string {
+  const m = r.gap.raw.match(/(\d+)/);
+  return m ? `Lap ${m[1]}` : "Leader";
 }
