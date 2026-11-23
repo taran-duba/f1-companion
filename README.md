@@ -36,7 +36,13 @@ cd frontend && npm run dev
 ```
 
 Open http://localhost:3000. The backend starts the demo race at 1× from the grid. Use
-**Replay** to change speed (0.5×–30×), pause and seek.
+**Replay** to change speed (0.5×–30×), pause and seek (Space plays/pauses, ←/→ jump 10 s;
+"Jump to" buttons go straight to the safety car and VSC periods).
+
+For a production build of the dashboard: `cd frontend && npm run build && npm start`.
+
+Keyboard on the live page: Tab into the timing tower, then ↑/↓ or j/k move the selected
+driver; Home/End jump to the leader/last car.
 
 To regenerate the demo fixture: `.venv/bin/python backend/scripts/generate_demo.py`
 (`--seed`, `--laps`, `--out`).
@@ -128,12 +134,27 @@ UTC timestamp. The full Subscribe snapshot comes first, one line per topic, flag
 ## Tests
 
 ```bash
-cd backend && ../.venv/bin/python -m pytest -q
-cd frontend && npm test
+cd backend && ../.venv/bin/python -m pytest -q     # 109 tests
+cd frontend && npm test                             # 74 tests
 ```
 
-Layout check (both servers running): `.venv/bin/python scripts/screenshot.py --out shots`
-(needs `pip install playwright && python -m playwright install chromium`).
+Backend tests cover the `.z` decoder, deep merge (index-keyed lists, `_deleted`), replay
+timing (fake clock: speed, pause, seek, end), the store's deltas, reconnect-from-snapshot
+(live client against a fake SignalR server, and the SSE hub), the recorder round trip, the
+FastF1 converter on a synthetic session, the demo fixture, and an end-to-end test that runs
+the real server on the demo and reads the SSE stream. Frontend tests cover the TypeScript
+merge (mirrors the Python one), the reconnecting EventSource wrapper (backoff, snapshot
+reset, stale patches), timing/battle rules, charts, telemetry buffering and the map.
+
+Browser checks (both servers running; `pip install playwright && python -m playwright
+install chromium` first):
+
+- `.venv/bin/python scripts/screenshot.py --out shots` — every page at 390 and 1440 px,
+  flags horizontal overflow, console errors and touch targets under 44 px.
+- `.venv/bin/python scripts/e2e_journey.py --out shots/e2e` — a scripted user journey:
+  replay controls, safety car, driver pages, phone tabs, backend killed and restarted
+  (the browser recovers from a fresh snapshot) and a round trip through the real live feed
+  (`--no-live` to skip). It restarts the backend.
 
 ## Hosting notes (not deployed)
 
@@ -168,4 +189,8 @@ Either way: keep it private. The F1 feed is for personal use; don't expose it pu
 - The track map is traced from car positions, so it appears after a car completes a clean
   lap; no official circuit geometry is bundled.
 - Single user, single active source; switching the source affects every open browser.
+- The tower fits 20 cars at 1440×900. The 2026 grid has 22, so in live mode the last two
+  rows sit just below the fold on that screen size.
+- The demo can't reproduce everything the real feed does (e.g. qualifying sessions, red
+  flags with restarts); those paths are only tested with unit tests.
 - No authentication on the API. Bind to `127.0.0.1` (default) unless on a trusted LAN.
