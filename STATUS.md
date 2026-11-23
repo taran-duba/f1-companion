@@ -19,8 +19,15 @@ _Last updated: 2026-11-23 ~04:30 (in progress — overnight run). Note: the run 
 - Live page against the demo: all 20 tower rows fit at 1440×900; phone layout is tower
   first, then tabs.
 
+- All pages built and independently reviewed (M5): telemetry panel with rolling chart,
+  track map traced from positions, gap chart + battle list, strategy view, lap time chart,
+  /driver overview, /driver/[code], /replay with marked seek bar, /settings.
+  Backend 105 tests, frontend 63 tests, `next build` passes.
+- Fixed after review: phone overflow on the live page (grid column min width), pit-in laps
+  showing the new compound, partial laps saved as "best" telemetry trace after a seek.
+
 ## In progress
-- Telemetry panel, track map, charts, driver/replay/settings pages (agents, in review).
+- Design Step C: impeccable critique (dual-agent), then fixes, then impeccable polish.
 
 ## Tooling notes
 - `web-design-guidelines` skill: **not installed**. Step D will be done manually against
@@ -29,3 +36,5 @@ _Last updated: 2026-11-23 ~04:30 (in progress — overnight run). Note: the run 
   `scripts/screenshot.py` (screenshots at 390 and 1440 + automated overflow, console-error
   and touch-target checks).
 - `ui-ux-pro-max`, `frontend-design` and `impeccable` skills are installed and used.
+- Impeccable reported an update (v4.0.2 → v4.10.0). Not applied: you asked me not to stop for
+  questions, and the update only takes effect next session. Run `npx impeccable update` if wanted.
