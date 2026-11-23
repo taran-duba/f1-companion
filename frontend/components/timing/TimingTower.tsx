@@ -44,29 +44,29 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
 
   const c = (cls: string) => (compact ? "hidden" : cls);
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-x-auto">
       <table className="w-full border-collapse text-body lg:text-row">
         <caption className="sr-only">
           Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry.
         </caption>
         <thead>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
-            <th scope="col" className="w-10 py-1 pr-2 text-right">
+            <th scope="col" className="w-9 py-1 pr-1.5 text-right lg:w-10 lg:pr-2">
               Pos
             </th>
             <th scope="col" className="py-1 pl-1">
               Driver
             </th>
-            <th scope="col" className="py-1 pr-3 text-right">
+            <th scope="col" className="py-1 pr-2 lg:pr-3 text-right">
               Interval
             </th>
-            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.gap)}`}>
+            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.gap)}`}>
               Gap
             </th>
-            <th scope="col" className="py-1 pr-3 text-right">
+            <th scope="col" className="py-1 pr-2 lg:pr-3 text-right">
               Last lap
             </th>
-            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.best)}`}>
+            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
               Best
             </th>
             <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
@@ -75,7 +75,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
               S2
             </th>
-            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 lg:pr-3 text-right ${c(COL.sectors)}`}>
               S3
             </th>
             <th scope="col" className="py-1 pr-2">
@@ -129,7 +129,7 @@ const Row = memo(function Row({
         selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : ""
       } ${out ? "text-muted" : ""}`}
     >
-      <td className="num w-10 pr-2 text-right align-middle text-title leading-none font-bold">
+      <td className="num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 text-title leading-none font-bold">
         <span className="inline-flex items-center justify-end gap-0.5">
           <PositionMove move={move} />
           {out ? <span className="text-small text-muted">—</span> : r.position}
@@ -144,7 +144,7 @@ const Row = memo(function Row({
           }}
           aria-pressed={selected}
           aria-label={`${r.name}, ${r.team}${selected ? ", selected" : ""}`}
-          className="flex min-h-11 items-center gap-2 rounded-chip pr-1 text-left lg:min-h-9"
+          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-9"
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>
@@ -153,26 +153,26 @@ const Row = memo(function Row({
           {out && <Chip tone="danger">{r.retired ? "DNF" : "STOP"}</Chip>}
         </button>
       </th>
-      <td className="num pr-3 text-right">
+      <td className="num pr-2 lg:pr-3 text-right">
         <Interval row={r} />
       </td>
-      <td className={`num pr-3 text-right ${c(COL.gap)}`}>
+      <td className={`num pr-2 lg:pr-3 text-right ${c(COL.gap)}`}>
         {out ? (
           <span className="text-faint">—</span>
         ) : (
           <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: "Leader" })}</span>
         )}
       </td>
-      <td className="pr-3 text-right">
+      <td className="pr-2 lg:pr-3 text-right">
         <Flash value={r.lastLap.value}>
           <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark} />
         </Flash>
       </td>
-      <td className={`pr-3 text-right ${c(COL.best)}`}>
+      <td className={`pr-2 lg:pr-3 text-right ${c(COL.best)}`}>
         <MarkedTime value={r.bestLap.value} mark={r.bestLap.mark} />
       </td>
       {r.sectors.map((s, i) => (
-        <td key={i} className={`${i === 2 ? "pr-3" : "pr-2"} text-right text-body ${c(COL.sectors)}`}>
+        <td key={i} className={`${i === 2 ? "pr-2 lg:pr-3" : "pr-2"} text-right text-body ${c(COL.sectors)}`}>
           <MarkedTime value={s.value} mark={s.mark} sector />
         </td>
       ))}
@@ -198,7 +198,7 @@ function Interval({ row: r }: { row: TowerRow }) {
     return (
       <span
         title="Within one second of the car ahead"
-        className="inline-flex items-center gap-1 rounded-chip px-1 font-semibold text-warn outline outline-1 outline-warn/70"
+        className="inline-flex items-center gap-0.5 rounded-chip px-0.5 font-semibold text-warn lg:gap-1 lg:px-1 outline outline-1 outline-warn/70"
       >
         <span aria-hidden="true" className="text-[0.75em]">
           ⇢
@@ -238,7 +238,7 @@ function Flash({ value, children }: { value: string; children: React.ReactNode }
     prev.current = value;
   }, [value]);
   return (
-    <span key={key} className={`inline-block rounded-chip px-1 ${key ? "animate-flash" : ""}`}>
+    <span key={key} className={`inline-block rounded-chip px-0.5 lg:px-1 ${key ? "animate-flash" : ""}`}>
       {children}
     </span>
   );
