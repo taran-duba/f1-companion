@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useTimingStream } from "@/lib/store";
 import type { ServerStatus } from "@/lib/types";
-import { Code, Detail, DetailList, Empty, Lead, StatusText } from "./Bits";
+import { Code, Detail, DetailList, Empty, ErrorText, Lead, StatusText } from "./Bits";
 import { formatBytes, formatCount } from "./format";
 
 /** "Record live sessions" switch plus what the recorder is doing right now. */
@@ -67,26 +67,29 @@ export function RecorderSection({ status }: { status: ServerStatus | null }) {
         aria-describedby="recorder-state"
         disabled={!status}
         onClick={toggle}
-        className="flex min-h-11 w-full items-center gap-3 rounded-chip border border-line-control px-3 py-2 text-left hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+        className="flex min-h-11 w-full items-center gap-3 rounded-chip border border-line-control px-3 py-2 text-left transition-colors duration-150 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none md:w-auto md:justify-self-start"
       >
         <span
           aria-hidden="true"
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 transition-colors duration-150 ${
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 transition-colors duration-150 motion-reduce:transition-none ${
             on ? "border-accent bg-accent" : "border-line-control bg-bg"
           }`}
         >
           <span
-            className={`absolute size-4 rounded-full transition-transform duration-150 ${
+            className={`absolute size-4 rounded-full transition-transform duration-150 motion-reduce:transition-none ${
               on ? "translate-x-[22px] bg-bg" : "translate-x-[2px] bg-muted"
             }`}
           />
         </span>
         <span className="text-body font-semibold text-text">Record live sessions</span>
-        <span className="ml-auto text-small font-semibold text-muted md:ml-2">{pending !== null ? "Saving…" : on ? "On" : "Off"}</span>
+        {/* On/Off duplicates aria-checked, so it stays out of the switch's name; "Saving…" is announced. */}
+        <span aria-hidden={pending === null} className="ml-auto text-small font-semibold text-muted md:ml-2">
+          {pending !== null ? "Saving…" : on ? "On" : "Off"}
+        </span>
       </button>
       {error && (
         <p role="alert" className="text-small">
-          <StatusText tone="danger">{error}</StatusText>
+          <ErrorText>{error}</ErrorText>
         </p>
       )}
 
@@ -103,7 +106,7 @@ export function RecorderSection({ status }: { status: ServerStatus | null }) {
         <Detail term="Size">{recording ? <span className="num">{formatBytes(typeof rec?.bytes === "number" ? rec.bytes : null)}</span> : <Empty />}</Detail>
         {lastError && (
           <Detail term="Last error">
-            <StatusText tone="danger">{lastError}</StatusText>
+            <ErrorText>{lastError}</ErrorText>
           </Detail>
         )}
       </DetailList>

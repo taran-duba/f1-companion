@@ -70,7 +70,8 @@ export function NowPlaying() {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-line-control px-2 text-micro font-semibold leading-5 text-text">
       <span aria-hidden="true" className="size-1.5 rounded-full bg-text" />
-      Active source
+      {/* Same word as the Settings source picker. */}
+      In use
     </span>
   );
 }

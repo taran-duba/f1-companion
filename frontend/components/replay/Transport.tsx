@@ -75,7 +75,8 @@ export function Transport({ source, totalLaps, send, error }: Props) {
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const target = e.target instanceof Element ? e.target : null;
       if (e.key === " " || e.code === "Space") {
-        if (target?.closest(SPACE_OWNERS)) return;
+        // The seek slider doesn't use Space itself, so it still toggles from there.
+        if (target?.closest(SPACE_OWNERS) && !target.matches('input[type="range"]')) return;
         e.preventDefault();
         // Holding Space would otherwise flip play/pause on every key repeat.
         if (!e.repeat) keys.current.toggle();

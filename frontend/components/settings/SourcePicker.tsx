@@ -200,6 +200,11 @@ function RadioDot({ checked }: { checked: boolean }) {
   );
 }
 
+/** "Playing", or "Loaded" while paused or ended (the name stays useful either way). */
+function playWord(state: string): string {
+  return state === "playing" ? "Playing" : "Loaded";
+}
+
 const linkButton =
   "mt-2 inline-flex min-h-11 items-center rounded-chip border border-line-control px-3 text-small font-semibold text-text hover:bg-bg";
 
@@ -237,7 +242,7 @@ function CardExtra({
       <div className="text-small">
         {active && status?.source.name && (
           <p className="mt-1 text-faint">
-            Playing <span className="break-all text-muted">{status.source.name}</span>
+            {playWord(status.source.state)} <span className="break-all text-muted">{status.source.name}</span>
           </p>
         )}
         {n != null && (
@@ -259,7 +264,7 @@ function CardExtra({
       <div className="text-small">
         {active && status?.source.name && (
           <p className="mt-1 text-faint">
-            Playing <span className="text-muted">{status.source.name}</span>
+            {playWord(status.source.state)} <span className="break-all text-muted">{status.source.name}</span>
           </p>
         )}
         {installed === false && (

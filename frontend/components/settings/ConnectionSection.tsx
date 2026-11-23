@@ -4,8 +4,10 @@ import { apiBase } from "@/lib/api";
 import type { StreamSnapshot } from "@/lib/stream";
 import type { ReactNode } from "react";
 import { useNow, useTimingStream } from "@/lib/store";
-import { Code, Detail, DetailList, Empty, StatusText, type Tone } from "./Bits";
-import { SOURCE_LABEL, formatAgo, formatClock, formatCount, stateWord, toChoice, toEpochMs } from "./format";
+import { Code, Detail, DetailList, Empty, ErrorText, StatusText, type Tone } from "./Bits";
+// Same h:mm:ss clock as the replay transport, so a position reads identically on both pages.
+import { formatClock } from "@/components/replay/format";
+import { SOURCE_LABEL, formatAgo, formatCount, stateWord, toChoice, toEpochMs } from "./format";
 import { useClientValue } from "./useClientValue";
 
 /** Browser↔backend link first, then the backend's own source details. */
@@ -96,7 +98,7 @@ export function ConnectionSection({ snap }: { snap: StreamSnapshot }) {
           <Detail term="State">{src ? <StatusText tone={srcTone}>{stateWord(src.state)}</StatusText> : <Empty />}</Detail>
           {status?.loading && (
             <Detail term="Loading">
-              <StatusText tone="warn">Loading a FastF1 session. This can take a minute.</StatusText>
+              <StatusText tone="warn">Loading a FastF1 session. The first load can take a few minutes.</StatusText>
             </Detail>
           )}
           {live && <LiveDetails snap={snap} now={now} />}
@@ -132,8 +134,8 @@ export function ConnectionSection({ snap }: { snap: StreamSnapshot }) {
             )}
           </Detail>
           {status?.error && (
-            <Detail term="Backend error">
-              <StatusText tone="danger">{status.error}</StatusText>
+            <Detail term="Last backend error">
+              <ErrorText>{status.error}</ErrorText>
             </Detail>
           )}
         </DetailList>
@@ -187,7 +189,7 @@ function LiveDetails({ snap, now }: { snap: StreamSnapshot; now: number }) {
         )}
       </Detail>
       <Detail term="Last error">
-        {src.last_error ? <StatusText tone="danger">{src.last_error}</StatusText> : <span className="text-muted">None</span>}
+        {src.last_error ? <ErrorText>{src.last_error}</ErrorText> : <span className="text-muted">None</span>}
       </Detail>
     </>
   );

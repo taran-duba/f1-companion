@@ -35,7 +35,7 @@ export function FastF1Form({
   const [startedAt, setStartedAt] = useState<number | null>(null);
 
   const serverLoading = server?.loading && server.loading.kind === "fastf1" ? server.loading : null;
-  const loading = pending !== null || !!serverLoading;
+  const isLoading = pending !== null || !!serverLoading;
   const serverError = !pending && !error && server?.error && /fastf1/i.test(server.error) ? server.error : null;
 
   const yearNum = Number(year);
@@ -44,15 +44,22 @@ export function FastF1Form({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!yearValid || !eventValid || loading) return;
+    if (!yearValid || !eventValid || isLoading) return;
     setStartedAt(Date.now());
     await run("fastf1", { kind: "fastf1", year: yearNum, event: event.trim(), session, speed: 1 });
     setStartedAt(null);
   }
 
-  const loadingLabel = serverLoading
-    ? `${serverLoading.event ?? event} ${serverLoading.year ?? year} ${serverLoading.session ?? session}`
-    : `${event.trim()} ${year} ${session}`;
+  // `server.loading` is untyped backend JSON: use its values only when they're strings/numbers.
+  const fromServer = (key: string): string | null => {
+    const v = serverLoading?.[key];
+    return typeof v === "string" || typeof v === "number" ? String(v) : null;
+  };
+  const loading = {
+    year: fromServer("year") ?? year,
+    event: fromServer("event") ?? event.trim(),
+    session: sessionName(fromServer("session") ?? session),
+  };
 
   return (
     <SourceSection id="src-fastf1" title="FastF1 session" active={active}>
@@ -63,7 +70,7 @@ export function FastF1Form({
           then restart the backend.
         </p>
       )}
-      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
+      <form onSubmit={submit} noValidate className="grid max-w-2xl gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
         <div>
           <label htmlFor="ff1-year" className="mb-1 block text-small font-semibold text-muted">
             Year
@@ -118,16 +125,18 @@ export function FastF1Form({
           </select>
         </div>
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-          <button type="submit" disabled={loading || !yearValid || !eventValid} className={BUTTON}>
-            {loading ? "Loading session…" : "Load session"}
+          <button type="submit" disabled={isLoading || !yearValid || !eventValid} className={BUTTON}>
+            {isLoading ? "Loading session…" : "Load session"}
           </button>
-          {!eventValid && !loading && <span className="text-small text-faint">Enter an event to load.</span>}
+          {!eventValid && !isLoading && <span className="text-small text-faint">Enter an event to load.</span>}
         </div>
       </form>
 
-      {loading && (
-        <div role="status" aria-live="polite" className="mt-3 rounded-chip border border-line-strong bg-raised px-3 py-2 text-small">
-          <p className="font-semibold text-text">Loading {loadingLabel.trim()}</p>
+      {isLoading && (
+        <div role="status" aria-live="polite" className="mt-3 max-w-2xl rounded-chip border border-line-strong bg-raised px-3 py-2 text-small">
+          <p className="font-semibold text-text">
+            Loading {loading.event} {loading.year}, {loading.session}
+          </p>
           <p className="text-muted">
             FastF1 downloads timing and car data for the whole session. The first load can take a few minutes; later loads come
             from the cache.
@@ -136,8 +145,13 @@ export function FastF1Form({
         </div>
       )}
 
-      {error && <InlineError title="FastF1 couldn't load the session">{error.message}</InlineError>}
-      {serverError && <InlineError title="Last FastF1 load failed">{serverError}</InlineError>}
+      {/* Same measure as the form and the loading note, so a long backend message doesn't run edge to edge. */}
+      {(error || serverError) && (
+        <div className="max-w-2xl">
+          {error && <InlineError title="FastF1 couldn't load the session">{error.message}</InlineError>}
+          {serverError && <InlineError title="Last FastF1 load failed">{serverError}</InlineError>}
+        </div>
+      )}
 
       <p className="mt-3 max-w-[65ch] text-small text-faint">
         FastF1 needs an F1 TV login: set <code className="font-mono text-muted">F1_USERNAME</code> and{" "}
@@ -147,6 +161,12 @@ export function FastF1Form({
       </p>
     </SourceSection>
   );
+}
+
+/** "Race (R)" → "Race"; unknown codes pass through. */
+function sessionName(code: string): string {
+  const label = SESSIONS.find((s) => s.value === code)?.label;
+  return label ? label.replace(/ \(.*\)$/, "") : code;
 }
 
 /** Seconds since the load started; ticks only while mounted (i.e. while loading). */

@@ -43,8 +43,8 @@ export default function ReplayPage() {
       };
 
   return (
-    <div className={`grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] ${place.grid}`}>
-      <div className={`order-3 min-w-0 xl:order-none xl:col-start-2 ${place.header}`}>
+    <div className={`grid grid-cols-1 gap-6 pt-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] ${place.grid}`}>
+      <div className={`order-3 w-full max-w-xl min-w-0 xl:order-none xl:col-start-2 xl:max-w-none ${place.header}`}>
         {state ? <SessionHeader state={state} bleed={false} /> : <h1 className="text-title font-bold">Replay</h1>}
       </div>
 
@@ -64,7 +64,7 @@ export default function ReplayPage() {
         <SourcePicker server={server} />
       </Panel>
 
-      {/* max-w-xl: the compact tower has five columns, so a full-width table spreads them too far apart to scan. */}
+      {/* max-w-xl (header above too, so the two line up): the compact tower has five columns, and a full-width table spreads them too far apart to scan. */}
       <section
         aria-label="Timing tower"
         className={`order-4 w-full max-w-xl min-w-0 self-start xl:order-none xl:col-start-2 xl:max-w-none ${place.tower}`}

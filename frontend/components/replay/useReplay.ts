@@ -41,7 +41,7 @@ export function useReplay() {
     [sse],
   );
 
-  return { source, server: status, send, error, clearError: () => setError(null) };
+  return { source, server: status, send, error };
 }
 
 /**

@@ -55,7 +55,7 @@ export function SpeedControl({
       <div
         role="group"
         aria-labelledby="replay-speed-label"
-        className="flex min-w-0 flex-1 rounded-chip border border-line-control md:flex-none"
+        className="flex min-w-0 max-w-sm flex-1 rounded-chip border border-line-control md:max-w-none md:flex-none"
       >
         {speeds.map((s) => {
           const active = Math.abs(s - value) < 1e-6;

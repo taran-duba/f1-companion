@@ -49,17 +49,6 @@ export function formatAgo(thenMs: number | null, now: number): string {
   return `${Math.floor(h / 24)} days ago`;
 }
 
-/** Seconds as "m:ss" or "h:mm:ss". */
-export function formatClock(secs: number | null | undefined): string {
-  if (secs == null || !Number.isFinite(secs)) return "—";
-  const total = Math.max(0, Math.floor(secs));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
-}
-
 export function formatCount(n: number | null | undefined): string {
   return n == null || !Number.isFinite(n) ? "—" : n.toLocaleString("en-GB");
 }

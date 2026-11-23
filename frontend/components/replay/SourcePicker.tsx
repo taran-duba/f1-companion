@@ -90,7 +90,7 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
                       <span className="ml-3">
                         {new Date(r.modified * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                       </span>
-                      {isActive && <span className="ml-3 font-semibold text-text">Playing</span>}
+                      {isActive && <span className="ml-3 font-semibold text-text">{src.state === "playing" ? "Playing" : "Loaded"}</span>}
                     </p>
                   </div>
                   <button

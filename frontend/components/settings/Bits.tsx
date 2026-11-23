@@ -42,6 +42,22 @@ export function StatusText({ tone, children }: { tone: Tone; children: ReactNode
   );
 }
 
+/**
+ * An error message from the backend: danger glyph, message in regular-weight
+ * body text. These run to several lines, and a paragraph of bold red is
+ * hard to read and louder than the problem usually is.
+ */
+export function ErrorText({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-start gap-1.5">
+      <span className="mt-1 shrink-0 text-danger">
+        <ToneGlyph tone="danger" />
+      </span>
+      <span className="min-w-0 max-w-[65ch] text-text">{children}</span>
+    </span>
+  );
+}
+
 export function ToneGlyph({ tone }: { tone: Tone }) {
   if (tone === "ok")
     return (
