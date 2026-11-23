@@ -7,6 +7,9 @@ import type { ServerStatus } from "@/lib/types";
 export const BUTTON =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-chip border border-line-control px-4 text-body font-semibold text-text transition-colors duration-150 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
 
+/** Shared with the Settings source picker so both pages describe the demo the same way. */
+export const DEMO_DESCRIPTION = "A made-up race that ships with the app, for trying things out.";
+
 export interface SourceBody {
   kind: "demo" | "replay" | "fastf1";
   file?: string;

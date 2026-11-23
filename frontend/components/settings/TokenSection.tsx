@@ -1,5 +1,5 @@
 import type { ServerStatus } from "@/lib/types";
-import { Code, CodeBlock, Detail, DetailList, Empty, Lead, StatusText } from "./Bits";
+import { Code, CodeBlock, Detail, DetailList, Empty, HowTo, Lead, StatusText } from "./Bits";
 
 /** F1 TV token: present or not (the value never leaves the backend). */
 export function TokenSection({ status }: { status: ServerStatus | null }) {
@@ -31,8 +31,7 @@ export function TokenSection({ status }: { status: ServerStatus | null }) {
         </Lead>
       </div>
 
-      <div>
-        <h3 className="text-small font-semibold text-text">How to set it</h3>
+      <HowTo summary="How to set a token">
         <Lead>
           Set <Code>F1TV_TOKEN</Code> in the environment before starting the backend, then restart it. Choose the live
           transport with <Code>F1_TRANSPORT</Code> (<Code>core</Code> by default, or <Code>legacy</Code>).
@@ -41,11 +40,13 @@ export function TokenSection({ status }: { status: ServerStatus | null }) {
 export F1TV_TOKEN="<your token>"
 export F1_TRANSPORT=core
 python -m f1live serve`}</CodeBlock>
-        <p className="mt-2 max-w-[60ch] text-small text-faint">
-          This app never fetches, stores or shows a token. You copy it yourself from your own F1 TV account, and the backend
-          only reports whether one is set. If it expires, set a fresh one and restart the backend.
-        </p>
-      </div>
+        <p className="max-w-[65ch] text-small text-muted">If the token expires, set a fresh one and restart the backend.</p>
+      </HowTo>
+
+      <p className="max-w-[65ch] text-small text-faint">
+        This app never fetches, stores or shows a token. You copy it yourself from your own F1 TV account, and the backend only
+        reports whether one is set.
+      </p>
     </div>
   );
 }

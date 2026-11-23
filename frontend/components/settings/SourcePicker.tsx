@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { api, ApiError, type SourcesResponse } from "@/lib/api";
 import type { ServerStatus } from "@/lib/types";
+import { DEMO_DESCRIPTION } from "@/components/replay/sourceUi";
 import { Chip } from "@/components/timing/Atoms";
 import { useTimingStream } from "@/lib/store";
 import { StatusText } from "./Bits";
@@ -12,7 +13,7 @@ import { SOURCE_LABEL, toChoice, type SourceChoice } from "./format";
 const ORDER: SourceChoice[] = ["demo", "replay", "live", "fastf1"];
 
 const DESCRIPTION: Record<SourceChoice, string> = {
-  demo: "A made-up race that ships with the app. Useful for trying things out when nothing is on.",
+  demo: DEMO_DESCRIPTION,
   replay: "A live session you recorded earlier, played back from data/recordings/.",
   live: "F1's live timing feed. Works without login for timing; car telemetry and positions need an F1 TV token.",
   fastf1: "A past session downloaded with the FastF1 library, played back like a recording.",
@@ -120,7 +121,7 @@ export function SourcePicker({ status }: { status: ServerStatus | null }) {
 
   return (
     <div>
-      <p id="source-help" className="text-small text-muted">
+      <p id="source-help" className="max-w-[65ch] text-small text-muted">
         Where the dashboard gets its timing from. Every page reads the same data, so switching here changes all of them.
       </p>
       <div role="radiogroup" aria-labelledby="source-title" aria-describedby="source-help" aria-busy={pending !== null} className="mt-3 grid gap-2">
@@ -159,7 +160,7 @@ export function SourcePicker({ status }: { status: ServerStatus | null }) {
                 {pending === c && <span className="text-small text-muted">Switching…</span>}
               </button>
               <div className="pb-3 pl-10 pr-3">
-                <p id={`source-${c}-desc`} className="text-small text-muted">
+                <p id={`source-${c}-desc`} className="max-w-[65ch] text-small text-muted">
                   {DESCRIPTION[c]}
                 </p>
                 <CardExtra
@@ -221,7 +222,7 @@ function CardExtra({
     return (
       <div className="mt-2 text-small">
         <StatusText tone="warn">Not generated yet</StatusText>
-        <p className="mt-1 text-muted">
+        <p className="mt-1 max-w-[65ch] text-muted">
           Run <code className="font-mono text-text">python backend/scripts/generate_demo.py</code>, then check again.
         </p>
         <button type="button" onClick={onRecheck} className={linkButton}>
@@ -276,7 +277,7 @@ function CardExtra({
   }
   if (choice === "live" && active && status && !status.token_present) {
     return (
-      <p className="mt-1 text-small text-faint">
+      <p className="mt-1 max-w-[65ch] text-small text-faint">
         No F1 TV token is set, so car telemetry and positions are off. Timing still works.
       </p>
     );

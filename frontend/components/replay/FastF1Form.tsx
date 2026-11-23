@@ -56,9 +56,9 @@ export function FastF1Form({
 
   return (
     <SourceSection id="src-fastf1" title="FastF1 session" active={active}>
-      <p className="mb-3 text-small text-muted">Any past session from 2018 on, rebuilt from FastF1 timing data.</p>
+      <p className="mb-3 max-w-[65ch] text-small text-muted">Any past session from 2018 on, rebuilt from FastF1 timing data.</p>
       {info && !info.installed && (
-        <p className="mb-3 text-small text-muted">
+        <p className="mb-3 max-w-[65ch] text-small text-muted">
           FastF1 isn&apos;t installed in the backend. Install it with <code className="font-mono text-text">pip install fastf1</code>,
           then restart the backend.
         </p>
@@ -139,7 +139,7 @@ export function FastF1Form({
       {error && <InlineError title="FastF1 couldn't load the session">{error.message}</InlineError>}
       {serverError && <InlineError title="Last FastF1 load failed">{serverError}</InlineError>}
 
-      <p className="mt-3 text-small text-faint">
+      <p className="mt-3 max-w-[65ch] text-small text-faint">
         FastF1 needs an F1 TV login: set <code className="font-mono text-muted">F1_USERNAME</code> and{" "}
         <code className="font-mono text-muted">F1_PASSWORD</code> for the backend, or run{" "}
         <code className="break-all font-mono text-muted">python -m fastf1 auth f1tv --authenticate</code> once.

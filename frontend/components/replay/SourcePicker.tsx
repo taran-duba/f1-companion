@@ -6,7 +6,7 @@ import { api, type SourcesResponse } from "@/lib/api";
 import type { ServerStatus } from "@/lib/types";
 import { FastF1Form } from "./FastF1Form";
 import { formatBytes } from "./format";
-import { BUTTON, InlineError, SourceSection, useSourceSwitch } from "./sourceUi";
+import { BUTTON, DEMO_DESCRIPTION, InlineError, SourceSection, useSourceSwitch } from "./sourceUi";
 
 /** Demo race, recordings and FastF1: the three ways to start a replay. */
 export function SourcePicker({ server }: { server: ServerStatus | null }) {
@@ -35,9 +35,7 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
   return (
     <div className="flex flex-col gap-4">
       <SourceSection id="src-demo" title="Demo race" active={src?.kind === "demo"}>
-        <p className="mb-3 text-small text-muted">
-          A synthetic race bundled with the app, with pit stops and a safety car. Always available, no account needed.
-        </p>
+        <p className="mb-3 max-w-[65ch] text-small text-muted">{DEMO_DESCRIPTION}</p>
         {demoAvailable ? (
           <button
             type="button"
@@ -45,7 +43,7 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
             disabled={pending !== null}
             onClick={() => void run("demo", { kind: "demo", speed: 5 })}
           >
-            {pending === "demo" ? "Starting…" : "Play demo race"}
+            {pending === "demo" ? "Starting…" : src?.kind === "demo" ? "Restart demo race" : "Play demo race"}
           </button>
         ) : (
           <p className="text-small text-muted">
@@ -70,7 +68,7 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
           </p>
         ) : recordings.length === 0 ? (
           <div className="rounded-chip border border-dashed border-line-strong px-3 py-3 text-small text-muted">
-            <p>
+            <p className="max-w-[65ch]">
               No recordings yet. Recordings are made while the live feed is on: turn on the recorder in Settings during a
               session and it will appear here to replay.
             </p>

@@ -79,7 +79,7 @@ export function ConnectionSection({ snap }: { snap: StreamSnapshot }) {
           <Detail term="Backend address">{base ? <Code>{base}</Code> : <Empty />}</Detail>
         </DetailList>
         {connection !== "open" && (
-          <p className="mt-2 max-w-[60ch] text-small text-muted">
+          <p className="mt-2 max-w-[65ch] text-small text-muted">
             The page reconnects on its own. If it keeps failing, check the backend is running: from the{" "}
             <Code>backend</Code> folder run <Code>python -m f1live serve</Code>.
           </p>

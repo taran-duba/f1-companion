@@ -177,8 +177,8 @@ border, `raised` hover, 2px `accent` focus ring with 2px offset (`:focus-visible
 button: `accent` background with `bg` text (≥ 9:1).
 
 ### Gauges (telemetry)
-- Speed: `text-display` number + "km/h" unit; horizontal bar 0–350.
-- Gear: `text-display` digit in a square, "N" for 0.
+- Speed: `text-headline` number + "km/h" unit (critique: a 44px speed for one car outranked the race order); horizontal bar 0–350.
+- Gear: `text-headline` digit in a square, "N" for 0. The live page uses a compact strip (one row of readouts + 30 s chart); the full panel lives on driver pages.
 - Throttle / brake: vertical or horizontal bars labelled "THR"/"BRK" with % values; throttle
   `ok`, brake `danger`; DRS: pill "DRS" — outline when available/eligible, filled `ok` when
   open, `faint` when off, text label always present.

@@ -87,5 +87,29 @@ export function CodeBlock({ children, label }: { children: ReactNode; label?: st
 
 /** Short explanatory paragraph under a section heading. */
 export function Lead({ children }: { children: ReactNode }) {
-  return <p className="max-w-[60ch] text-small text-muted">{children}</p>;
+  return <p className="max-w-[65ch] text-small text-muted">{children}</p>;
+}
+
+/**
+ * Collapsible how-to (native details/summary, so it works without JS and is
+ * keyboard-operable). Status lines stay outside it so they're always visible.
+ */
+export function HowTo({ summary, children }: { summary: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-chip border border-line">
+      <summary className="flex min-h-11 list-none items-center gap-2 rounded-chip px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+        >
+          <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {summary}
+      </summary>
+      <div className="grid gap-3 border-t border-line px-3 pb-3 pt-3">{children}</div>
+    </details>
+  );
 }

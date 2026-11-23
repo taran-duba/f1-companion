@@ -32,8 +32,11 @@ const SESSION_STATUS: Record<string, string> = {
   Ends: "Finished",
 };
 
-/** Session name, status, lap X of Y, track status and weather as separate labelled cells. */
-export function SessionHeader({ state }: { state: TimingState }) {
+/**
+ * Session name, status, lap X of Y, track status and weather as separate labelled cells.
+ * `bleed` stretches the tint to the page edges; turn it off inside a column layout.
+ */
+export function SessionHeader({ state, bleed = true }: { state: TimingState; bleed?: boolean }) {
   const { meeting, session } = sessionTitle(state);
   const ts = trackStatus(state);
   const w = weather(state);
@@ -46,7 +49,7 @@ export function SessionHeader({ state }: { state: TimingState }) {
   return (
     <section
       aria-label="Session"
-      className={`-mx-4 mb-1.5 border-b border-line px-4 pb-1.5 pt-1 lg:-mx-6 lg:px-6 ${loud ? (TONE_FRAME[ts.tone] ?? "") : ""}`}
+      className={`mb-1.5 border-b border-line pb-1.5 pt-1 ${bleed ? "-mx-4 px-4 lg:-mx-6 lg:px-6" : "px-3"} ${loud ? (TONE_FRAME[ts.tone] ?? "") : ""}`}
     >
       <div className="flex flex-wrap items-end gap-x-6 gap-y-1">
         <div className="mr-auto min-w-0 max-w-full">

@@ -17,7 +17,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-[720px] pt-3">
       <h1 className="text-headline font-bold text-text">Settings and status</h1>
-      <p className="mt-1 max-w-[60ch] text-small text-muted">
+      <p className="mt-1 max-w-[65ch] text-small text-muted">
         Choose where timing comes from and check that everything is connected. Changes apply to every open page.
       </p>
 
@@ -35,7 +35,7 @@ export default function SettingsPage() {
             </span>
             Why is car telemetry missing?
           </h2>
-          <p className="mt-1 text-small text-muted">
+          <p className="mt-1 max-w-[65ch] text-small text-muted">
             Car telemetry needs an F1 TV token in live mode. Timing still works. Speed, throttle, brake and the track map
             come back once a token is set (see F1 TV token below).
           </p>
