@@ -71,3 +71,15 @@ for a real-time monitoring product, and a second screen next to a TV is
 usually in a dim room. The app ships one dark theme; no theme toggle.
 Fonts are Fira Sans + Fira Code via `next/font/google`, which downloads
 them at build time and serves them locally (no runtime Google requests).
+
+## D7 — Real live feed check (2026-11-23 ~04:25 ET)
+Switched the running app to `F1_SOURCE=live` against the real endpoint (no
+session running; F1 still serves the last session's snapshot). Result:
+connected over SignalR Core, 13 topics, `missing_topics: [CarData.z,
+Position.z]`, tower/header/race control rendered the real Las Vegas GP
+classification, telemetry and map showed the "needs an F1 TV token" state.
+It exposed one bug the demo didn't (a retired car in the pit lane showed two
+status chips and overflowed the tower), fixed by container-query columns and
+a single status chip. The 2026 grid has 22 cars: at 1440×900 the last two
+rows sit just below the fold (the demo's 20 fit). Accepted; rows stay 35px.
+No real data was saved or committed.
