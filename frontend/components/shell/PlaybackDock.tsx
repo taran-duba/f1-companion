@@ -16,7 +16,7 @@ export function PlaybackDock() {
   return (
     <section
       aria-label="Playback"
-      className="sticky bottom-0 z-30 border-t border-line-strong bg-surface/95 px-3 py-2 backdrop-blur pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:px-4"
+      className="boot-dock sticky bottom-3 z-30 mx-3 mb-3 rounded-panel border border-line/70 bg-surface/90 px-4 py-2 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:mx-6"
     >
       <div className="mx-auto max-w-[1800px]">
         <Transport dock source={source} totalLaps={state?.LapCount?.TotalLaps} send={send} error={error} />

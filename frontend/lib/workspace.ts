@@ -99,17 +99,16 @@ const PRESET_NAMES: Record<PresetKey, string> = {
 };
 
 const PRESET_TILES: Record<PresetKey, () => Tile[]> = {
+  // Three tiles at most: a layout is one idea, and the background art needs room to show.
   race: () => [
-    tile("tower"),
-    tile("telemetry"),
-    tile("map", { w: 4 }),
-    tile("control", { w: 3 }),
+    tile("tower", { w: 5 }),
+    tile("telemetry", { w: 7, h: 6 }),
+    tile("map", { w: 7, h: 6 }),
   ],
   duel: () => [
     tile("tower", { w: 4 }),
-    tile("telemetry", { w: 4 }),
-    tile("telemetry", { w: 4, driver: "ahead" }),
-    tile("traces", { w: 8, h: 6 }),
+    tile("telemetry", { w: 8, h: 6 }),
+    tile("telemetry", { w: 8, h: 6, driver: "behind" }),
   ],
   pit: () => [
     tile("tower", { w: 4 }),
@@ -119,8 +118,7 @@ const PRESET_TILES: Record<PresetKey, () => Tile[]> = {
   analysis: () => [
     tile("tower", { w: 4 }),
     tile("laps", { w: 8, h: 6 }),
-    tile("sectors", { w: 4, h: 6 }),
-    tile("gaps", { w: 4, h: 6 }),
+    tile("sectors", { w: 8, h: 6 }),
   ],
 };
 
@@ -232,7 +230,7 @@ export function resolveDriver(ref: DriverRef, rows: TowerRow[], selected: string
 // Persistence
 // ---------------------------------------------------------------------------
 
-export const STORAGE_KEY = "f1c.workspace.v1";
+export const STORAGE_KEY = "f1c.workspace.v2";
 
 const isType = (v: unknown): v is WidgetType => typeof v === "string" && v in WIDGETS;
 const isRef = (v: unknown): v is DriverRef =>

@@ -3,7 +3,7 @@
 import { formatSpeed } from "./format";
 
 /** Primary play / pause button; label and icon follow the replay state. */
-export function PlayButton({ state, disabled, onClick }: { state: string; disabled?: boolean; onClick: () => void }) {
+export function PlayButton({ state, disabled, onClick, compact = false }: { state: string; disabled?: boolean; onClick: () => void; compact?: boolean }) {
   const playing = state === "playing";
   const ended = state === "ended";
   const label = playing ? "Pause" : ended ? "Restart" : "Play";
@@ -13,7 +13,7 @@ export function PlayButton({ state, disabled, onClick }: { state: string; disabl
       onClick={onClick}
       disabled={disabled}
       aria-label={`${label} replay`}
-      className="inline-flex min-h-11 min-w-28 items-center justify-center gap-2 rounded-chip bg-accent px-4 text-body font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none"
+      className={`inline-flex min-h-11 items-center justify-center gap-2 bg-accent font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none ${compact ? "size-11 rounded-full" : "min-w-28 rounded-chip px-4 text-body"}`}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
         {playing ? (
@@ -30,7 +30,7 @@ export function PlayButton({ state, disabled, onClick }: { state: string; disabl
           <path d="M4 2.2v11.6c0 .6.7 1 1.2.6l8.6-5.8a.7.7 0 0 0 0-1.2L5.2 1.6C4.7 1.2 4 1.6 4 2.2Z" />
         )}
       </svg>
-      <span aria-hidden="true">{label}</span>
+      {!compact && <span aria-hidden="true">{label}</span>}
     </button>
   );
 }

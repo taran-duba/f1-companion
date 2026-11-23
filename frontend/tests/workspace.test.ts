@@ -46,7 +46,7 @@ describe("workspace operations", () => {
     expect(activeLayout(ws).tiles.at(-1)?.type).toBe("pits");
     ws = removeTile(ws, first.id);
     expect(activeLayout(ws).tiles.find((t) => t.id === first.id)).toBeUndefined();
-    expect(ws.layouts.find((l) => l.id === "duel")!.tiles.length).toBe(4);
+    expect(ws.layouts.find((l) => l.id === "duel")!.tiles.length).toBe(3);
   });
 
   it("copies the active layout when adding one, and deletes custom layouts", () => {
@@ -68,7 +68,7 @@ describe("workspace operations", () => {
     ws = removeTile(ws, activeLayout(ws).tiles[0].id);
     ws = removeOrResetLayout(ws, "race");
     expect(ws.layouts.some((l) => l.id === "race")).toBe(true);
-    expect(activeLayout(ws).tiles.length).toBe(4);
+    expect(activeLayout(ws).tiles.length).toBe(3);
   });
 
   it("ignores an empty rename", () => {

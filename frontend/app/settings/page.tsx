@@ -1,5 +1,6 @@
 "use client";
 
+import { ArtControls } from "@/components/art/ArtControls";
 import { Panel } from "@/components/Panel";
 import { ConnectionSection } from "@/components/settings/ConnectionSection";
 import { PhoneSection } from "@/components/settings/PhoneSection";
@@ -14,7 +15,7 @@ export default function StatusPage() {
   const { openSources } = useUi();
 
   return (
-    <div className="max-w-[720px] pt-3">
+    <div className="max-w-[860px] pt-3">
       <h1 className="text-headline font-bold text-text">Status</h1>
       <p className="mt-1 max-w-[65ch] text-small text-muted">
         Check that everything is connected. To change where timing comes from, or to add your F1 TV token, use the source
@@ -37,6 +38,9 @@ export default function StatusPage() {
       <div className="mt-6 grid gap-6">
         <Panel id="connection" title="Connection">
           <ConnectionSection snap={snap} />
+        </Panel>
+        <Panel id="background" title="Background art">
+          <ArtControls />
         </Panel>
         <Panel id="phone" title="Open on your phone">
           <PhoneSection />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useStream } from "@/lib/store";
 import { formatGap, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
@@ -50,6 +50,8 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   const { generation } = useStream();
   const rows = useMemo(() => towerRows(state), [state]);
   const moves = usePositionMoves(rows, generation);
+  const table = useRef<HTMLTableElement>(null);
+  useRowGlide(table, rows, generation);
   const lap = state.LapCount?.CurrentLap;
   // Roving focus: one tab stop for the whole tower (the selected row), arrows move within it.
   const focusNum = rows.some((r) => r.num === selected) ? selected : rows[0]?.num;
@@ -85,7 +87,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   const c = (cls: string) => (compact ? "hidden" : cls);
   return (
     <div className="@container overflow-x-auto">
-      <table className="w-full border-collapse text-[0.9375rem] @max-[340px]:text-[0.875rem] @min-[400px]:text-body lg:text-row" onKeyDown={onKeyDown}>
+      <table ref={table} className="w-full border-collapse text-[0.9375rem] @max-[340px]:text-[0.875rem] @min-[400px]:text-body lg:text-row" onKeyDown={onKeyDown}>
         <caption className="sr-only">
           Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry; up and down arrows move between
           drivers.
@@ -168,6 +170,7 @@ const Row = memo(function Row({
   const chip = out ? (r.retired ? "DNF" : "STOP") : r.inPit ? "PIT" : r.pitOut ? "OUT" : null;
   return (
     <tr
+      data-row={r.num}
       onClick={() => onSelect(r.num)}
       className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-8 ${
         // Hover is lighter than selection so pointing at a row never reads as selecting it.
@@ -316,6 +319,38 @@ function Flash({ value, children }: { value: string; children: React.ReactNode }
  * (`generation`: reconnect or replay seek) replaces the running order wholesale, so it
  * resets the baseline instead of reporting every car as having gained or lost places.
  */
+/**
+ * When the running order changes, rows slide from where they were to where they are (FLIP)
+ * instead of teleporting. Skipped on a fresh snapshot (seek, source switch) and under
+ * reduced motion.
+ */
+function useRowGlide(table: React.RefObject<HTMLTableElement | null>, rows: TowerRow[], generation: number) {
+  const tops = useRef(new Map<string, number>());
+  const gen = useRef(generation);
+  useLayoutEffect(() => {
+    const body = table.current?.tBodies[0];
+    if (!body) return;
+    const fresh = gen.current !== generation;
+    gen.current = generation;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const next = new Map<string, number>();
+    for (const tr of Array.from(body.rows)) {
+      const id = tr.dataset.row;
+      if (!id) continue;
+      const top = tr.offsetTop;
+      next.set(id, top);
+      const was = tops.current.get(id);
+      if (!fresh && !reduce && was != null && was !== top) {
+        tr.animate([{ transform: `translateY(${was - top}px)` }, { transform: "translateY(0)" }], {
+          duration: 420,
+          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        });
+      }
+    }
+    tops.current = next;
+  }, [table, rows, generation]);
+}
+
 function usePositionMoves(rows: TowerRow[], generation: number): Record<string, number> {
   const last = useRef<Record<string, number>>({});
   const lastGen = useRef(generation);

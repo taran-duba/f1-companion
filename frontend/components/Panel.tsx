@@ -19,14 +19,14 @@ export function Panel({
   const H = headingLevel === 2 ? "h2" : "h3";
   const headingId = id ? `${id}-title` : undefined;
   return (
-    <section aria-labelledby={headingId} id={id} className={`rounded-panel border border-line-strong bg-surface ${className}`}>
-      <div className="flex min-h-10 items-center justify-between gap-3 border-b border-line px-3 py-2 lg:px-4">
-        <H id={headingId} className="text-body font-semibold text-text">
+    <section aria-labelledby={headingId} id={id} className={`rounded-panel border border-line/70 bg-surface/80 ${className}`}>
+      <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
+        <H id={headingId} className="text-small font-semibold text-muted">
           {title}
         </H>
         {meta && <div className="text-small text-faint">{meta}</div>}
       </div>
-      <div className="p-3 lg:p-4">{children}</div>
+      <div className="px-4 pb-4">{children}</div>
     </section>
   );
 }

@@ -77,7 +77,7 @@ export function Workspace() {
                 value={selected ?? ""}
                 onChange={(e) => select(e.target.value || null)}
                 disabled={!drivers.length}
-                className="h-9 cursor-pointer rounded-chip border border-line-control bg-raised px-2 text-small font-semibold text-text hover:border-accent disabled:opacity-60"
+                className="h-9 cursor-pointer rounded-chip border border-transparent bg-raised/60 px-2 text-small font-semibold text-text transition-colors duration-200 hover:border-line-control disabled:opacity-60"
               >
                 {!selected && <option value="">No driver</option>}
                 {drivers.map((d) => (
@@ -87,7 +87,7 @@ export function Workspace() {
                 ))}
               </select>
             </label>
-            <button type="button" className={`${BTN} ${edit ? "border-accent text-accent" : ""}`} aria-pressed={edit} onClick={() => { setEdit((e) => !e); setFocusId(null); setAdding(false); }}>
+            <button type="button" className={`${BTN} border-transparent ${edit ? "!border-accent text-accent" : "text-muted hover:text-text"}`} aria-pressed={edit} onClick={() => { setEdit((e) => !e); setFocusId(null); setAdding(false); }}>
               {edit ? "Done" : "Customize"}
             </button>
           </>
@@ -95,7 +95,7 @@ export function Workspace() {
       />
 
       {edit && (
-        <div className="relative -mx-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-raised/50 px-3 py-2 lg:-mx-4 lg:px-4">
+        <div className="relative mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-panel bg-raised/60 px-4 py-2">
           <label className="flex items-center gap-2 text-small font-semibold text-muted">
             Layout name
             <input
@@ -116,7 +116,7 @@ export function Workspace() {
               Add widget
             </button>
             {adding && (
-              <ul className="absolute left-0 top-full z-40 mt-1 grid max-h-[70dvh] w-[min(24rem,calc(100vw-1.5rem))] gap-px overflow-y-auto rounded-panel border border-line-strong bg-line p-px shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
+              <ul className="absolute left-0 top-full z-40 mt-1 grid animate-fade-in max-h-[70dvh] w-[min(24rem,calc(100vw-1.5rem))] gap-px overflow-y-auto rounded-panel border border-line-strong bg-line p-px shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
                 {WIDGET_ORDER.map((type) => (
                   <li key={type} className="bg-surface">
                     <button
@@ -163,7 +163,7 @@ export function Workspace() {
           </button>
         </div>
       ) : (
-        <div className="workspace mt-2 grid grid-cols-1 gap-2">
+        <div key={focused ? `focus-${focused.id}` : layout.id} className="workspace mt-3 grid grid-cols-1 gap-3 animate-fade-in">
           {tiles.map((t, i) => {
             const num = resolveDriver(t.driver, rows, selected);
             return (

@@ -99,7 +99,7 @@ function MessageRow({ m, clamp }: { m: RaceControlMessage; clamp: boolean }) {
 }
 
 /** Race control shouts in caps; sentence case is easier to read at a glance. */
-function sentence(s: string) {
+export function sentence(s: string) {
   if (!s || s !== s.toUpperCase()) return s;
   const lower = s.toLowerCase();
   return lower

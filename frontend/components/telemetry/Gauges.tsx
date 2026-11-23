@@ -10,7 +10,7 @@ function Bar({ value, max, tone, className = "h-2" }: { value: number | null; ma
   const fill = { ok: "bg-ok", danger: "bg-danger", text: "bg-muted" }[tone];
   return (
     <div aria-hidden="true" className={`relative w-full overflow-hidden rounded-full bg-raised ${className}`}>
-      {value != null && <div className={`absolute inset-y-0 left-0 rounded-full ${fill}`} style={{ width: pct(value, max) }} />}
+      {value != null && <div className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-linear ${fill}`} style={{ width: pct(value, max) }} />}
     </div>
   );
 }

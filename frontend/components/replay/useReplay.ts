@@ -46,7 +46,7 @@ export function useReplay() {
 
 /**
  * Replay position interpolated between status updates (~1/s) so the clock
- * moves smoothly: position + elapsed wall time × speed while playing.
+ * moves smoothly (once per animation frame): position + elapsed wall time × speed while playing.
  * Bump `epoch` on every user seek so a small backwards seek isn't mistaken
  * for network jitter.
  */
@@ -65,7 +65,9 @@ export function usePlaybackClock(source: SourceStatus | null, epoch = 0): number
       return;
     }
     const startWall = performance.now();
-    const id = window.setInterval(() => {
+    // One update per frame: the playhead moves continuously instead of in 250 ms steps.
+    let raf = 0;
+    const frame = () => {
       let v = Math.min(end, position + ((performance.now() - startWall) / 1000) * speed);
       // A fresh status can land slightly behind what we already showed;
       // hold rather than tick backwards.
@@ -73,8 +75,10 @@ export function usePlaybackClock(source: SourceStatus | null, epoch = 0): number
       if (prev && prev.epoch === epoch && v < prev.value && prev.value - v < jitter) v = prev.value;
       last.current = { value: v, epoch };
       setTick({ base: position, value: v, epoch });
-    }, 250);
-    return () => window.clearInterval(id);
+      raf = window.requestAnimationFrame(frame);
+    };
+    raf = window.requestAnimationFrame(frame);
+    return () => window.cancelAnimationFrame(raf);
   }, [playing, position, speed, end, epoch, jitter]);
 
   if (!playing || !tick || tick.epoch !== epoch) return position;

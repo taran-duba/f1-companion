@@ -42,7 +42,7 @@ export function SourcePanel() {
   return (
     <>
       {/* Scrim only below lg, where the sheet covers the page; on desktop you keep watching. */}
-      <div className="fixed inset-0 z-40 bg-bg/70 lg:hidden" aria-hidden="true" onClick={closeSources} />
+      <div className="fixed inset-0 z-40 animate-fade-in bg-bg/70 lg:hidden" aria-hidden="true" onClick={closeSources} />
       <aside
         ref={panel}
         role="dialog"
@@ -55,7 +55,7 @@ export function SourcePanel() {
             closeSources();
           }
         }}
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[26rem] flex-col border-l border-line-strong bg-bg shadow-[-12px_0_32px_rgba(0,0,0,0.45)] outline-none"
+        className="fixed inset-y-0 right-0 z-50 flex animate-panel-in w-full max-w-[26rem] flex-col border-l border-line-strong bg-bg shadow-[-12px_0_32px_rgba(0,0,0,0.45)] outline-none"
       >
         <header className="flex items-start gap-3 border-b border-line px-4 pb-3 pt-3">
           <div className="min-w-0 flex-1">
@@ -102,7 +102,7 @@ export function SourcePanel() {
                     document.getElementById(`src-tab-${next}`)?.focus();
                   }
                 }}
-                className={`flex min-h-11 flex-col items-start justify-center rounded-chip px-3 text-left transition-colors duration-150 ${
+                className={`flex min-h-11 flex-col items-start justify-center rounded-chip px-3 text-left transition-[background-color,box-shadow] duration-200 ${
                   on ? "bg-raised shadow-[inset_0_-2px_0_var(--color-accent)]" : "hover:bg-raised/60"
                 }`}
               >

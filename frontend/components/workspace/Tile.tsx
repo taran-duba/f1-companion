@@ -70,12 +70,12 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
           onDropTile(id);
         }
       }}
-      style={{ "--w": tile.w, "--h": tile.h } as CSSProperties}
-      className={`tile flex min-h-0 min-w-0 flex-col rounded-panel border bg-surface ${focused ? "tile-focus" : ""} ${
-        over ? "border-accent" : edit ? "border-dashed border-line-control" : "border-line-strong"
+      style={{ "--w": tile.w, "--h": tile.h, "--i": index } as CSSProperties}
+      className={`tile group/tile flex min-h-0 min-w-0 flex-col rounded-panel border bg-surface/80 transition-colors duration-300 ${focused ? "tile-focus" : ""} ${
+        over ? "border-accent" : edit ? "border-dashed border-line-control" : "border-line/70 hover:border-line-strong"
       }`}
     >
-      <header className="flex min-h-10 flex-wrap items-center gap-x-1.5 border-b border-line pl-3 pr-1">
+      <header className="flex min-h-11 flex-wrap items-center gap-x-1.5 pl-4 pr-2">
         {edit && (
           <span aria-hidden="true" title="Drag to rearrange" className="-ml-1 cursor-grab text-faint active:cursor-grabbing">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
@@ -83,7 +83,7 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
             </svg>
           </span>
         )}
-        <h2 className="min-w-0 truncate text-body font-semibold text-text">{info.title}</h2>
+        <h2 className="min-w-0 truncate text-small font-semibold text-muted">{info.title}</h2>
 
         {info.driver && (
           <label className="relative ml-1 inline-flex min-w-0 items-center">
@@ -91,7 +91,7 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
             <select
               value={tile.driver}
               onChange={(e) => onDriver(e.target.value as DriverRef)}
-              className="h-7 max-w-[10.5rem] cursor-pointer appearance-none truncate rounded-chip border border-line-control bg-raised py-0 pl-2 pr-6 text-small font-semibold text-text hover:border-accent"
+              className="h-7 max-w-[10.5rem] cursor-pointer appearance-none truncate rounded-chip border border-transparent bg-transparent py-0 pl-2 pr-6 text-small font-semibold text-text transition-colors duration-200 hover:border-line-control hover:bg-raised"
             >
               <optgroup label="Relative">
                 <option value="follow">{followedCode ? `Followed (${followedCode})` : "Followed driver"}</option>
@@ -146,13 +146,16 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
               </IconBtn>
             </>
           ) : (
-            <IconBtn label={focused ? "Back to layout" : `Fill the screen with ${info.title}`} onClick={onFocus}>
-              {focused ? <path d="M5 1v4H1M9 1v4h4M5 13V9H1M9 13V9h4" /> : <path d="M1 5V1h4M13 5V1H9M1 9v4h4M13 9v4H9" />}
-            </IconBtn>
+            // Quiet until you reach for the tile (always visible on touch screens).
+            <span className="opacity-0 transition-opacity duration-300 group-focus-within/tile:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100">
+              <IconBtn label={focused ? "Back to layout" : `Fill the screen with ${info.title}`} onClick={onFocus}>
+                {focused ? <path d="M5 1v4H1M9 1v4h4M5 13V9H1M9 13V9h4" /> : <path d="M1 5V1h4M13 5V1H9M1 9v4h4M13 9v4H9" />}
+              </IconBtn>
+            </span>
           )}
         </div>
       </header>
-      <div className={`min-h-0 flex-1 overflow-auto ${flush ? "" : "p-3"} ${flush ? "" : "max-h-[34rem] lg:max-h-none"}`}>{children}</div>
+      <div className={`min-h-0 flex-1 overflow-auto ${flush ? "px-2 pb-2" : "px-4 pb-4"} ${flush ? "" : "max-h-[34rem] lg:max-h-none"}`}>{children}</div>
     </section>
   );
 }

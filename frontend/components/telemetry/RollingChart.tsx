@@ -1,3 +1,4 @@
+import { SlideG } from "./SlideG";
 import { areaPath, linePath, SPEED_MAX, summarise, visible, type TelSample } from "@/lib/telemetry";
 
 const W = 300;
@@ -28,8 +29,10 @@ function Band({ label, samples, windowMs, ch, colour, compact }: { label: string
       <span className="self-center text-micro text-muted">{label}</span>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" className={`block w-full rounded-chip bg-raised/60 ${compact ? "h-4" : "h-7"}`}>
         <VGrid windowMs={windowMs} />
-        <path d={areaPath(samples, ch, windowMs, W, H, 100)} fill={colour} fillOpacity={0.35} />
-        <path d={linePath(samples, ch, windowMs, W, H, 100)} fill="none" stroke={colour} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+        <SlideG newest={samples.at(-1)?.t ?? null} windowMs={windowMs} width={W}>
+          <path d={areaPath(samples, ch, windowMs, W, H, 100)} fill={colour} fillOpacity={0.35} />
+          <path d={linePath(samples, ch, windowMs, W, H, 100)} fill="none" stroke={colour} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+        </SlideG>
       </svg>
     </>
   );
@@ -37,7 +40,7 @@ function Band({ label, samples, windowMs, ch, colour, compact }: { label: string
 
 /**
  * Rolling speed line with throttle and brake bands under it. Hand-rolled SVG,
- * no animation; the x axis is anchored to the newest sample so the chart
+ * the lines glide between samples (SlideG); the x axis is anchored to the newest sample so the chart
  * stops when the feed (or the replay) stops. `compact` is the live-dashboard size
  * (about 120px tall, no unit label: the readout above it carries km/h).
  */
@@ -80,14 +83,16 @@ export function RollingChart({
             return <line key={v} x1={0} x2={W} y1={y} y2={y} stroke="var(--color-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />;
           })}
           <VGrid windowMs={windowMs} />
-          <path
-            d={linePath(shown, "speed", windowMs, W, H, SPEED_MAX)}
-            fill="none"
-            stroke={colour}
-            strokeWidth={2}
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          <SlideG newest={shown.at(-1)?.t ?? null} windowMs={windowMs} width={W}>
+            <path
+              d={linePath(shown, "speed", windowMs, W, H, SPEED_MAX)}
+              fill="none"
+              stroke={colour}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </SlideG>
         </svg>
 
         <Band label="Throttle" samples={shown} windowMs={windowMs} ch="throttle" colour="var(--color-ok)" compact={compact} />

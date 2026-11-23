@@ -129,7 +129,7 @@ export function Transport({ source, totalLaps, send, error, dock = false }: Prop
     return (
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <PlayButton state={source.state} onClick={() => void send("toggle")} />
+          <PlayButton compact state={source.state} onClick={() => void send("toggle")} />
           <span className="num text-body font-semibold">
             <span aria-hidden="true">{formatClock(elapsed)}</span>
             <span aria-hidden="true" className="font-normal text-faint">
@@ -142,13 +142,27 @@ export function Transport({ source, totalLaps, send, error, dock = false }: Prop
             {scrub !== null && <span className="ml-2 text-small font-normal text-faint">seeking</span>}
           </span>
           <div className="order-last w-full lg:order-none lg:w-auto lg:min-w-48 lg:flex-1">{seekBar}</div>
-          <SpeedControl speeds={speeds} value={source.speed ?? 1} onChange={(v) => void send("speed", v)} />
+          <div className="hidden md:block">
+            <SpeedControl speeds={speeds} value={source.speed ?? 1} onChange={(v) => void send("speed", v)} />
+          </div>
+          {/* Phones: one button that steps through the speeds, instead of a six-way control. */}
+          <button
+            type="button"
+            onClick={() => {
+              const i = speeds.indexOf(source.speed ?? 1);
+              void send("speed", speeds[(i + 1) % speeds.length]);
+            }}
+            aria-label={`Playback speed ${source.speed ?? 1} times. Tap for the next speed.`}
+            className="num ml-auto min-h-11 min-w-14 rounded-chip border border-line-control px-3 text-small font-semibold text-text md:hidden"
+          >
+            {source.speed ?? 1}×
+          </button>
           {markers.periods.length > 0 && (
             <button
               type="button"
               aria-expanded={jumps}
               onClick={() => setJumps((j) => !j)}
-              className="min-h-11 rounded-chip border border-line-control px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised"
+              className="hidden min-h-11 rounded-chip border border-line-control px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised md:inline-flex md:items-center"
             >
               Jump to
             </button>

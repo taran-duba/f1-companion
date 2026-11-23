@@ -56,8 +56,8 @@
   --text-display--line-height: 2.75rem;
 
   /* Shape & layout */
-  --radius-panel: 6px;
-  --radius-chip: 4px;
+  --radius-panel: 12px;
+  --radius-chip: 6px;
   --breakpoint-sm: 24.375rem; /* 390px */
 
   /* Motion */
@@ -65,6 +65,26 @@
   --animate-flash: flash 600ms ease-out;
   --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
   --animate-flag-in: flag-in 600ms ease-out;
+  --animate-panel-in: panel-in 260ms var(--ease-out-quick) both;
+  --animate-fade-in: fade-in 200ms ease-out both;
+  --animate-tile-in: tile-in 320ms var(--ease-out-quick) both;
+
+  @keyframes panel-in {
+    from { transform: translateX(2rem); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { transform: translateY(-0.6rem); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes tile-in {
+    from { transform: translateY(0.5rem); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 
   @keyframes flag-in {
     0% { opacity: 0.25; }
@@ -106,6 +126,11 @@
   button:not(:disabled), [role="button"], select, summary {
     cursor: pointer;
   }
+  /* Controls answer the press with a small instant dip. (The independent scale property
+     doesn't fight Tailwind's translate or any transform.) */
+  button:not(:disabled):active {
+    scale: 0.97;
+  }
   /* Phones: keep focused or scrolled-to content clear of the fixed selected-driver bar. */
   @media (width < 64rem) {
     html:has([data-driver-bar]) {
@@ -139,11 +164,11 @@
 }
 
 /* Workspace grid. Tiles stack on phones and tablets; from lg they sit on 12 columns, each row
-   3.5rem tall, and a tile spans its own width (--w) and height (--h). */
+   3.25rem tall, and a tile spans its own width (--w) and height (--h). */
 @media (width >= 64rem) {
   .workspace {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-auto-rows: 3.5rem;
+    grid-auto-rows: 3.25rem;
     grid-auto-flow: row dense;
   }
   .workspace > .tile {
@@ -154,6 +179,23 @@
     grid-column: 1 / -1;
     grid-row: span 16 / span 16;
   }
+}
+
+/* Entrance choreography, once per session (AppShell sets html[data-booted] a few seconds
+   after load, so later visits to the workspace don't replay it): the art draws in first
+   (Slipstream), then the top bar, the session strip, the tiles one after another, the dock.
+   Switching layouts afterwards is a quiet cross-fade of the whole grid, never per tile. */
+html:not([data-booted="true"]) .boot-bar {
+  animation: rise 700ms var(--ease-out-quick) 450ms both;
+}
+html:not([data-booted="true"]) .boot-strip {
+  animation: rise 700ms var(--ease-out-quick) 700ms both;
+}
+html:not([data-booted="true"]) .workspace > .tile {
+  animation: tile-in 800ms var(--ease-out-quick) calc(1000ms + var(--i, 0) * 130ms) both;
+}
+html:not([data-booted="true"]) .boot-dock {
+  animation: tile-in 700ms var(--ease-out-quick) 1700ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
