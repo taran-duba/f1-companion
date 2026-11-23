@@ -33,8 +33,17 @@ _Last updated: 2026-11-23 ~04:30 (in progress — overnight run). Note: the run 
 - Real live feed checked end-to-end (DECISIONS.md D7): works without a token for timing;
   found and fixed a tower overflow that only real data triggered.
 
+- Design Step C: impeccable polish done (three areas, two independent verifiers). Notable:
+  one-tab-stop tower with arrow/j/k navigation, no false position arrows after seeks,
+  stale pit-lane gaps hidden, "Retry now" when the backend is down, purple fastest-lap
+  traces, SC shading on lap charts. Frontend 73 tests, backend 108 tests, build passes,
+  10/10 page×width layout checks clean.
+- A usage limit interrupted the polish run once; it resumed on its own while I had
+  restarted it, so two polish passes ran concurrently. Both finished, both verifiers passed,
+  and the merged result was rechecked before committing.
+
 ## In progress
-- Design Step C: impeccable polish (3 area agents + verifier).
+- Design Step D: web interface guidelines audit (manual; skill not installed).
 
 ## Tooling notes
 - `web-design-guidelines` skill: **not installed**. Step D will be done manually against
