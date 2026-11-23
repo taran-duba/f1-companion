@@ -76,8 +76,9 @@ export function TeamBar({ colour, className = "h-6" }: { colour: string; classNa
   return <span aria-hidden="true" className={`inline-block w-1 shrink-0 rounded-sm ${className}`} style={{ background: colour }} />;
 }
 
-export function Chip({ tone, children, title }: { tone: "warn" | "danger" | "ok" | "muted"; children: React.ReactNode; title?: string }) {
+export function Chip({ tone, children, title }: { tone: "warn" | "danger" | "ok" | "muted" | "accent"; children: React.ReactNode; title?: string }) {
   const cls = {
+    accent: "border-accent text-accent",
     warn: "border-warn text-warn",
     danger: "border-danger text-danger",
     ok: "border-ok text-ok",

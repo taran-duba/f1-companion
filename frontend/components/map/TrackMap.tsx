@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { OpenSources } from "../sources/OpenSources";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
 import { carLabel, carMarkers, mapSummary, mapView, outlinePath, placeLabels } from "@/lib/trackmap";
@@ -40,10 +40,7 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
       <EmptyState>
         Car telemetry needs an F1 TV token in live mode. Timing still works. The track map is drawn from car
         positions, so it appears once a token is set.{" "}
-        <Link href="/settings" className="font-semibold text-accent underline underline-offset-2">
-          Add a token in Settings
-        </Link>
-        .
+        <OpenSources token>Add your F1 TV token</OpenSources>.
       </EmptyState>
     );
   }

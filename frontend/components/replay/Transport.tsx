@@ -23,10 +23,13 @@ interface Props {
   totalLaps?: number;
   send: (action: ReplayAction, value?: number) => Promise<boolean>;
   error: string | null;
+  /** One-row bar for the bottom of the screen: jump-to periods open on demand. */
+  dock?: boolean;
 }
 
 /** Play/pause, speed and seek for the active replay, demo or FastF1 session. */
-export function Transport({ source, totalLaps, send, error }: Props) {
+export function Transport({ source, totalLaps, send, error, dock = false }: Props) {
+  const [jumps, setJumps] = useState(false);
   const start = source.start ?? 0;
   const end = source.end ?? start;
   const markers = readMarkers(source);
@@ -98,6 +101,65 @@ export function Transport({ source, totalLaps, send, error }: Props) {
   const speeds = source.speeds?.length ? source.speeds : DEFAULT_SPEEDS;
   const stateWord = STATE_WORD[source.state] ?? source.state;
 
+  const seekBar = (
+    <SeekBar
+      start={start}
+      end={end}
+      value={shown}
+      markers={markers}
+      valueText={`${spokenClock(elapsed)} of ${spokenClock(total)}${lapText ? `, ${lapText.toLowerCase()}` : ""}`}
+      // While playback moves the slider, a focused slider only re-announces once per lap (or minute).
+      holdKey={source.state === "playing" && scrub === null ? (lap != null ? `lap${lap}` : `min${Math.floor(elapsed / 60)}`) : null}
+      onScrub={setScrub}
+      onCommit={(v) => void commitSeek(v)}
+      onCancel={() => setScrub(null)}
+      onKeySeek={seekBy}
+    />
+  );
+  const errorBox = error && (
+    <p role="alert" className="rounded-chip border border-danger px-3 py-2 text-small text-text">
+      <span className="font-semibold text-danger">
+        <span aria-hidden="true">✕ </span>Couldn&apos;t control the replay:
+      </span>{" "}
+      {error}
+    </p>
+  );
+
+  if (dock) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <PlayButton state={source.state} onClick={() => void send("toggle")} />
+          <span className="num text-body font-semibold">
+            <span aria-hidden="true">{formatClock(elapsed)}</span>
+            <span aria-hidden="true" className="font-normal text-faint">
+              {" / "}
+              {formatClock(total)}
+            </span>
+            <span className="sr-only">
+              {stateWord}, {spokenClock(elapsed)} of {spokenClock(total)}
+            </span>
+            {scrub !== null && <span className="ml-2 text-small font-normal text-faint">seeking</span>}
+          </span>
+          <div className="order-last w-full lg:order-none lg:w-auto lg:min-w-48 lg:flex-1">{seekBar}</div>
+          <SpeedControl speeds={speeds} value={source.speed ?? 1} onChange={(v) => void send("speed", v)} />
+          {markers.periods.length > 0 && (
+            <button
+              type="button"
+              aria-expanded={jumps}
+              onClick={() => setJumps((j) => !j)}
+              className="min-h-11 rounded-chip border border-line-control px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised"
+            >
+              Jump to
+            </button>
+          )}
+        </div>
+        {jumps && <PeriodList markers={markers} start={start} onJump={(t) => void commitSeek(t)} />}
+        {errorBox}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -135,28 +197,9 @@ export function Transport({ source, totalLaps, send, error }: Props) {
         </div>
       </div>
 
-      <SeekBar
-        start={start}
-        end={end}
-        value={shown}
-        markers={markers}
-        valueText={`${spokenClock(elapsed)} of ${spokenClock(total)}${lapText ? `, ${lapText.toLowerCase()}` : ""}`}
-        // While playback moves the slider, a focused slider only re-announces once per lap (or minute).
-        holdKey={source.state === "playing" && scrub === null ? (lap != null ? `lap${lap}` : `min${Math.floor(elapsed / 60)}`) : null}
-        onScrub={setScrub}
-        onCommit={(v) => void commitSeek(v)}
-        onCancel={() => setScrub(null)}
-        onKeySeek={seekBy}
-      />
+      {seekBar}
 
-      {error && (
-        <p role="alert" className="rounded-chip border border-danger px-3 py-2 text-small text-text">
-          <span className="font-semibold text-danger">
-            <span aria-hidden="true">✕ </span>Couldn&apos;t control the replay:
-          </span>{" "}
-          {error}
-        </p>
-      )}
+      {errorBox}
 
       <PeriodList markers={markers} start={start} onJump={(t) => void commitSeek(t)} />
       <KeyHint />

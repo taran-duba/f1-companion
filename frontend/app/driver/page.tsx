@@ -67,8 +67,8 @@ export default function DriversPage() {
           </>
         ) : (
           <EmptyState>
-            No drivers yet. The timing feed hasn&apos;t listed any cars for this session. Pick a source on the Replay or
-            Settings page, or wait for the session to start.
+            No drivers yet. The timing feed hasn&apos;t listed any cars for this session. Pick a source from the chip at
+            the top right, or wait for the session to start.
           </EmptyState>
         )}
       </section>

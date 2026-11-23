@@ -3,6 +3,8 @@ import { Fira_Code, Space_Grotesk } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { StreamProvider } from "@/lib/store";
 import { SelectionProvider } from "@/lib/selection";
+import { UiProvider } from "@/lib/ui";
+import { WorkspaceProvider } from "@/lib/useWorkspace";
 import "./globals.css";
 
 // UI font. Swap the family here; the variable name keeps everything else unchanged.
@@ -38,7 +40,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <StreamProvider>
           <SelectionProvider>
-            <AppShell>{children}</AppShell>
+            <UiProvider>
+              <WorkspaceProvider>
+                <AppShell>{children}</AppShell>
+              </WorkspaceProvider>
+            </UiProvider>
           </SelectionProvider>
         </StreamProvider>
       </body>

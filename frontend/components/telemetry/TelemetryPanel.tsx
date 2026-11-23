@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { OpenSources } from "../sources/OpenSources";
 import { useStream } from "@/lib/store";
 import type { TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
@@ -124,12 +124,7 @@ export function TelemetryPanel({
       {noToken ? (
         <EmptyState>
           <p>Car telemetry needs an F1 TV token in live mode. Timing still works.</p>
-          <Link
-            href="/settings"
-            className="mt-1 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-2 lg:min-h-8"
-          >
-            Add a token in Settings
-          </Link>
+          <OpenSources token>Add your F1 TV token</OpenSources>
         </EmptyState>
       ) : (
         <TelemetryBody

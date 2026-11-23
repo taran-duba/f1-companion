@@ -5,6 +5,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useStream } from "@/lib/store";
 import { formatGap, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
+import { OpenSources } from "../sources/OpenSources";
 import { Chip, Diamond, MarkedTime, TeamBar, TyreBadge } from "./Atoms";
 
 interface Props {
@@ -76,7 +77,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   if (!rows.length) {
     return (
       <div className="rounded-panel border border-line-strong bg-surface p-6 text-muted">
-        Waiting for timing data. If this persists, check the source on the Settings page.
+        Waiting for timing data. If this persists, check the source: <OpenSources className="!min-h-0">open the source panel</OpenSources>.
       </div>
     );
   }
@@ -168,7 +169,7 @@ const Row = memo(function Row({
   return (
     <tr
       onClick={() => onSelect(r.num)}
-      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-[35px] ${
+      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-8 ${
         // Hover is lighter than selection so pointing at a row never reads as selecting it.
         selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : "hover:bg-raised/50"
       } ${out ? "text-muted" : ""}`}
@@ -192,7 +193,7 @@ const Row = memo(function Row({
           tabIndex={focusable ? 0 : -1}
           // Name starts with the visible text (code + chip) so voice control can target it.
           aria-label={`${r.code}${chip ? ` ${chip}` : ""}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
-          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-[35px]"
+          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-8"
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>

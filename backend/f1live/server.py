@@ -27,6 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from . import credentials
 from .manager import DEMO_PATH, SourceManager, list_recordings
 from .state import StateStore
 
@@ -156,11 +157,16 @@ class RecorderControl(BaseModel):
     enabled: bool
 
 
+class CredentialsRequest(BaseModel):
+    token: str = Field(max_length=credentials.MAX_LEN + 64)
+
+
 def create_app(initial_source: str | None = None) -> FastAPI:
     store = StateStore()
     hub: Hub | None = None
     manager = SourceManager(store, on_status=lambda: hub.mark_status() if hub else None)
     hub = Hub(store, manager)
+    credentials.load()
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -183,7 +189,7 @@ def create_app(initial_source: str | None = None) -> FastAPI:
 
     app = FastAPI(title="F1 Companion", lifespan=lifespan)
     origins = os.environ.get("F1_CORS_ORIGINS", "*").split(",")
-    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
+    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST", "DELETE"],
                        allow_headers=["Content-Type"])
     app.state.store, app.state.manager, app.state.hub = store, manager, hub
 
@@ -261,6 +267,29 @@ def create_app(initial_source: str | None = None) -> FastAPI:
     @app.post("/api/recorder")
     async def recorder(ctl: RecorderControl) -> dict:
         await manager.set_recording(ctl.enabled)
+        return manager.status()
+
+    async def _reapply_token() -> None:
+        """The live feed reads the token when it connects, so reconnect to pick up a change."""
+        src = manager.source
+        if src is not None and src.kind == "live":
+            await manager.use_live()
+        else:
+            hub.mark_status()
+
+    @app.post("/api/credentials")
+    async def save_credentials(req: CredentialsRequest) -> dict:
+        try:
+            credentials.save(req.token)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        await _reapply_token()
+        return manager.status()
+
+    @app.delete("/api/credentials")
+    async def clear_credentials() -> dict:
+        credentials.clear()
+        await _reapply_token()
         return manager.status()
 
     @app.get("/api/telemetry/{num}")

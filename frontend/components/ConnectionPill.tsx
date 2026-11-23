@@ -2,17 +2,18 @@
 
 import { useNow, useStream, useTimingStream } from "@/lib/store";
 
+export type Tone = "ok" | "warn" | "danger" | "accent";
+
 /**
- * One pill answering "can I trust what I'm seeing?": browser↔backend
- * connection first, then the backend's own source state.
+ * "Can I trust what I'm seeing?": browser↔backend connection first, then the backend's
+ * own source state. Shared by the source chip and the connection pill.
  */
-export function ConnectionPill() {
+export function useConnectionView() {
   const { connection, status, retryAt, lastEventAt } = useStream();
-  const stream = useTimingStream();
   const now = useNow(1000);
   const src = status?.source;
 
-  let tone: "ok" | "warn" | "danger" | "accent" = "warn";
+  let tone: Tone = "warn";
   let label = "Connecting";
   let detail = "";
 
@@ -52,18 +53,26 @@ export function ConnectionPill() {
     label = "Connected";
   }
 
-  const toneClass = {
-    ok: "text-ok border-ok/60",
-    warn: "text-warn border-warn/60",
-    danger: "text-danger border-danger/60",
-    accent: "text-accent border-accent/60",
-  }[tone];
   const pulsing = tone === "ok" && src?.kind === "live";
+  return { tone, label, detail, pulsing, replay: src?.state, connection };
+}
+
+export const TONE_CLASS: Record<Tone, string> = {
+  ok: "text-ok border-ok/60",
+  warn: "text-warn border-warn/60",
+  danger: "text-danger border-danger/60",
+  accent: "text-accent border-accent/60",
+};
+
+/** One pill with the connection state, for places where a plain status is enough. */
+export function ConnectionPill() {
+  const { tone, label, detail, pulsing, replay, connection } = useConnectionView();
+  const stream = useTimingStream();
 
   return (
     <div className="flex items-center gap-2">
-      <p className={`flex min-h-8 items-center gap-2 rounded-full border px-3 text-small font-semibold ${toneClass}`}>
-        <StatusGlyph tone={tone} pulsing={pulsing} replay={src?.state} />
+      <p className={`flex min-h-8 items-center gap-2 rounded-full border px-3 text-small font-semibold ${TONE_CLASS[tone]}`}>
+        <StatusGlyph tone={tone} pulsing={pulsing} replay={replay} />
         <span>
           {/* Only the state is live; the ticking countdown stays out so it isn't re-announced every second. */}
           <span role="status" aria-live="polite">
@@ -85,7 +94,7 @@ export function ConnectionPill() {
   );
 }
 
-function StatusGlyph({ tone, pulsing, replay }: { tone: string; pulsing: boolean; replay?: string }) {
+export function StatusGlyph({ tone, pulsing, replay }: { tone: string; pulsing: boolean; replay?: string }) {
   // Shape differs per state so colour isn't the only signal.
   if (tone === "danger")
     return (

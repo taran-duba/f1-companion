@@ -138,6 +138,24 @@
   }
 }
 
+/* Workspace grid. Tiles stack on phones and tablets; from lg they sit on 12 columns, each row
+   3.5rem tall, and a tile spans its own width (--w) and height (--h). */
+@media (width >= 64rem) {
+  .workspace {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 3.5rem;
+    grid-auto-flow: row dense;
+  }
+  .workspace > .tile {
+    grid-column: span var(--w) / span var(--w);
+    grid-row: span var(--h) / span var(--h);
+  }
+  .workspace > .tile-focus {
+    grid-column: 1 / -1;
+    grid-row: span 16 / span 16;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

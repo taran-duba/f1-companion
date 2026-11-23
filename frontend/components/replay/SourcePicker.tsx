@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, type SourcesResponse } from "@/lib/api";
 import type { ServerStatus } from "@/lib/types";
+import { useUi } from "@/lib/ui";
 import { FastF1Form } from "./FastF1Form";
 import { formatBytes } from "./format";
 import { BUTTON, DEMO_DESCRIPTION, InlineError, SourceSection, useSourceSwitch } from "./sourceUi";
@@ -13,6 +13,7 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
   const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { pending, error, run } = useSourceSwitch();
+  const { setSourceTab } = useUi();
   const src = server?.source;
 
   const load = useCallback(() => {
@@ -69,12 +70,12 @@ export function SourcePicker({ server }: { server: ServerStatus | null }) {
         ) : recordings.length === 0 ? (
           <div className="rounded-chip border border-dashed border-line-strong px-3 py-3 text-small text-muted">
             <p className="max-w-[65ch]">
-              No recordings yet. Recordings are made while the live feed is on: turn on the recorder in Settings during a
-              session and it will appear here to replay.
+              No recordings yet. Recordings are made while the live feed is on: open the Live tab, turn on &ldquo;Record
+              live sessions&rdquo; during a session, and it will appear here to replay.
             </p>
-            <Link href="/settings" className={`${BUTTON} mt-3`}>
-              Open Settings
-            </Link>
+            <button type="button" className={`${BUTTON} mt-3`} onClick={() => setSourceTab("live")}>
+              Go to Live
+            </button>
           </div>
         ) : (
           <ul className="flex flex-col divide-y divide-line">

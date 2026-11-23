@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
+from . import credentials
 from .messages import Message, utc_iso
 from .sources.base import Source
 from .sources.replay import ReplaySource
@@ -116,6 +117,7 @@ class SourceManager:
             "loading": self.loading,
             "error": self.last_error,
             "token_present": bool(os.environ.get("F1TV_TOKEN")),
+            "token_source": credentials.source(),
             "transport": os.environ.get("F1_TRANSPORT", "core"),
         }
 

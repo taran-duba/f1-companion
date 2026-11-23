@@ -162,6 +162,8 @@ export interface ServerStatus {
   loading: Record<string, unknown> | null;
   error: string | null;
   token_present: boolean;
+  /** Where the token came from: saved in the dashboard, or the F1TV_TOKEN environment variable. */
+  token_source?: "dashboard" | "environment" | null;
   transport: string;
 }
 

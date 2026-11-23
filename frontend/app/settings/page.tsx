@@ -3,23 +3,30 @@
 import { Panel } from "@/components/Panel";
 import { ConnectionSection } from "@/components/settings/ConnectionSection";
 import { PhoneSection } from "@/components/settings/PhoneSection";
-import { RecorderSection } from "@/components/settings/RecorderSection";
-import { SourcePicker } from "@/components/settings/SourcePicker";
-import { TokenSection } from "@/components/settings/TokenSection";
-import { StatusText, ToneGlyph } from "@/components/settings/Bits";
+import { StatusText } from "@/components/settings/Bits";
 import { useStream } from "@/lib/store";
+import { useUi } from "@/lib/ui";
 
-export default function SettingsPage() {
+/** Diagnostics: is the backend reachable, what is it doing, how to open this from a phone. */
+export default function StatusPage() {
   const snap = useStream();
-  const { status, state } = snap;
-  const telemetryMissing = status?.source.kind === "live" && state?.Feed?.telemetry === false;
+  const { status } = snap;
+  const { openSources } = useUi();
 
   return (
     <div className="max-w-[720px] pt-3">
-      <h1 className="text-headline font-bold text-text">Settings and status</h1>
+      <h1 className="text-headline font-bold text-text">Status</h1>
       <p className="mt-1 max-w-[65ch] text-small text-muted">
-        Choose where timing comes from and check that everything is connected. Changes apply to every open page.
+        Check that everything is connected. To change where timing comes from, or to add your F1 TV token, use the source
+        panel.
       </p>
+      <button
+        type="button"
+        onClick={() => openSources()}
+        className="mt-3 inline-flex min-h-11 items-center rounded-chip border border-line-control px-4 text-body font-semibold text-text transition-colors duration-150 hover:bg-raised"
+      >
+        Open sources and F1 TV account
+      </button>
 
       {status == null && (
         <p className="mt-4 text-small" role="status">
@@ -27,33 +34,9 @@ export default function SettingsPage() {
         </p>
       )}
 
-      {telemetryMissing && (
-        <aside aria-labelledby="telemetry-why" className="mt-4 rounded-panel border border-warn/60 bg-surface px-4 py-3">
-          <h2 id="telemetry-why" className="flex items-center gap-2 text-body font-semibold text-text">
-            <span className="text-warn">
-              <ToneGlyph tone="warn" />
-            </span>
-            Why is car telemetry missing?
-          </h2>
-          <p className="mt-1 max-w-[65ch] text-small text-muted">
-            Car telemetry needs an F1 TV token in live mode. Timing still works. Speed, throttle, brake and the track map
-            come back once a token is set (see F1 TV token below).
-          </p>
-        </aside>
-      )}
-
       <div className="mt-6 grid gap-6">
-        <Panel id="source" title="Data source">
-          <SourcePicker status={status} />
-        </Panel>
         <Panel id="connection" title="Connection">
           <ConnectionSection snap={snap} />
-        </Panel>
-        <Panel id="token" title="F1 TV token">
-          <TokenSection status={status} />
-        </Panel>
-        <Panel id="recorder" title="Recorder">
-          <RecorderSection status={status} />
         </Panel>
         <Panel id="phone" title="Open on your phone">
           <PhoneSection />

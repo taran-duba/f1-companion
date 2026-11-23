@@ -38,7 +38,7 @@ export function LoadingState() {
           <p className="mt-4 text-small text-faint">
             Opening this from another device? Run the backend with <code className="font-mono">--host 0.0.0.0</code>. See{" "}
             <Link className="underline underline-offset-4 hover:text-text" href="/settings">
-              Settings
+              Status
             </Link>
             .
           </p>

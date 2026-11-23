@@ -98,26 +98,6 @@ function MessageRow({ m, clamp }: { m: RaceControlMessage; clamp: boolean }) {
   );
 }
 
-/** One-line latest message for phones; tapping it opens the full feed. */
-export function RaceControlTicker({ state, onOpen }: { state: TimingState; onOpen: () => void }) {
-  const latest = useMemo(() => raceControl(state)[0], [state]);
-  if (!latest) return null;
-  const t = tag(latest);
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="mb-2 flex min-h-11 w-full items-center gap-2 rounded-panel border border-line-strong bg-surface px-3 text-left transition-colors duration-150 hover:bg-raised active:bg-raised"
-    >
-      <span className="sr-only">Latest race control message: </span>
-      {latest.Lap != null && <span className="num shrink-0 font-mono text-micro text-faint">L{latest.Lap}</span>}
-      {t && <span className={`shrink-0 rounded-chip border px-1.5 text-micro font-bold leading-5 ${t.cls}`}>{t.label}</span>}
-      <span className="min-w-0 flex-1 truncate text-small text-text">{sentence(latest.Message ?? "")}</span>
-      <span aria-hidden="true" className="shrink-0 text-muted">›</span>
-    </button>
-  );
-}
-
 /** Race control shouts in caps; sentence case is easier to read at a glance. */
 function sentence(s: string) {
   if (!s || s !== s.toUpperCase()) return s;

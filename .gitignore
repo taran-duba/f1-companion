@@ -14,5 +14,8 @@ frontend/playwright-report/
 data/recordings/*
 !data/recordings/.gitkeep
 data/fastf1-cache/
+# F1 TV token saved from the dashboard.
+data/credentials.json
+data/credentials.tmp
 .DS_Store
 .claude-flow/

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { useUi } from "@/lib/ui";
 import { api, ApiError } from "@/lib/api";
 import { useTimingStream } from "@/lib/store";
 import type { ServerStatus } from "@/lib/types";
@@ -10,6 +10,7 @@ import { formatBytes, formatCount } from "./format";
 
 /** "Record live sessions" switch plus what the recorder is doing right now. */
 export function RecorderSection({ status }: { status: ServerStatus | null }) {
+  const { openSources } = useUi();
   const rec = status?.recorder;
   const requested = Boolean(rec?.requested ?? rec?.enabled);
   const recording = Boolean(rec?.enabled);
@@ -56,7 +57,7 @@ export function RecorderSection({ status }: { status: ServerStatus | null }) {
     <div className="grid gap-4">
       <Lead>
         Saves the live feed to <Code>data/recordings/</Code> so you can watch it again later from the{" "}
-        <span className="text-text">Replay</span> page. It only records while the source is live timing; with the demo or a
+        <span className="text-text">Replay</span> tab. It only records while the source is live timing; with the demo or a
         replay it waits.
       </Lead>
 
@@ -110,12 +111,13 @@ export function RecorderSection({ status }: { status: ServerStatus | null }) {
           </Detail>
         )}
       </DetailList>
-      <Link
-        href="/replay"
+      <button
+        type="button"
+        onClick={() => openSources("replay")}
         className="inline-flex min-h-11 items-center justify-self-start rounded-chip border border-line-control px-3 text-small font-semibold text-text hover:bg-raised"
       >
         Open saved recordings
-      </Link>
+      </button>
     </div>
   );
 }

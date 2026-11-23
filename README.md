@@ -63,7 +63,7 @@ cd frontend && npm run dev -- -H 0.0.0.0
 cd backend && F1_SOURCE=live ../.venv/bin/python -m f1live serve
 ```
 
-or pick **Live timing** on the Settings page. What to expect (tested 2026-11-22, see
+or pick **Live timing** from the source chip (top right). What to expect (tested 2026-11-22, see
 DECISIONS.md D1):
 
 - The legacy `/signalr` endpoint described in most guides now returns **401**.
@@ -81,7 +81,7 @@ recycled; each reconnect starts from a fresh snapshot.
 
 ### Recording
 
-Turn on **Record live sessions** in Settings. While the source is live, every message is
+Turn on **Record live sessions** in the source panel (Live tab). While the source is live, every message is
 written to `data/recordings/<UTC time>_<session>.jsonl` in the replay format below.
 Recordings appear on the Replay page.
 

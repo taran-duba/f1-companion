@@ -11,7 +11,7 @@ export const BUTTON =
 export const DEMO_DESCRIPTION = "A made-up race that ships with the app, for trying things out.";
 
 export interface SourceBody {
-  kind: "demo" | "replay" | "fastf1";
+  kind: "demo" | "replay" | "fastf1" | "live";
   file?: string;
   year?: number;
   event?: string;
