@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* Design tokens — see DESIGN_SYSTEM.md. The app is dark only. */
+@theme {
+  /* Surfaces & text */
+  --color-bg: #05070d;
+  --color-surface: #0d111c;
+  --color-raised: #161c2b;
+  --color-line: #2a3346;
+  --color-line-strong: #3d4a63;
+  --color-line-control: #65728e;
+  --color-text: #f3f5f9;
+  --color-muted: #a9b3c7;
+  --color-faint: #8590a6;
+  --color-accent: #5cc8ff;
+
+  /* Status */
+  --color-ok: #3ddc84;
+  --color-warn: #ffb020;
+  --color-danger: #ff5c5c;
+
+  /* Timing */
+  --color-sector-purple: #c68aff;
+  --color-sector-green: #3ddc84;
+  --color-sector-yellow: #ffd43b;
+
+  /* Tyres */
+  --color-tyre-soft: #ff4d4d;
+  --color-tyre-medium: #ffd12e;
+  --color-tyre-hard: #f2f2f2;
+  --color-tyre-inter: #43d66f;
+  --color-tyre-wet: #4d9aff;
+
+  /* Flags */
+  --color-flag-green: #3ddc84;
+  --color-flag-yellow: #ffd43b;
+  --color-flag-red: #ff5c5c;
+
+  /* Type */
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, monospace;
+
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1rem;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-row: 1.0625rem;
+  --text-row--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-headline: 1.75rem;
+  --text-headline--line-height: 2rem;
+  --text-display: 2.75rem;
+  --text-display--line-height: 2.75rem;
+
+  /* Shape & layout */
+  --radius-panel: 6px;
+  --radius-chip: 4px;
+  --breakpoint-sm: 24.375rem; /* 390px */
+
+  /* Motion */
+  --ease-out-quick: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-flash: flash 600ms ease-out;
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+
+  @keyframes flash {
+    from { background-color: var(--color-raised); }
+    to { background-color: transparent; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html {
+    background: var(--color-bg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+  button, [role="button"], a, select, summary, label[for] {
+    touch-action: manipulation;
+  }
+  button:not(:disabled), [role="button"], select, summary {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  /* Tabular numerals for every time, gap and counter. */
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+  .label-micro {
+    font-size: var(--text-micro);
+    line-height: var(--text-micro--line-height);
+    font-weight: 600;
+    color: var(--color-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
