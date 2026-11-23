@@ -64,3 +64,16 @@ describe("stale pit gaps", () => {
     expect(rows[2].gap.seconds).toBe(17.86);
   });
 });
+
+describe("stale pit gaps behind another pitting car", () => {
+  it("compares with the largest gap ahead, not only the car directly ahead", () => {
+    const rows = towerRows(race("1", {
+      "1": { Position: "1", GapToLeader: "LAP 30", IntervalToPositionAhead: { Value: "LAP 30" } },
+      "2": { Position: "2", GapToLeader: "+29.000", IntervalToPositionAhead: { Value: "+29.000" } },
+      "3": { Position: "3", InPit: true },
+      "4": { Position: "4", GapToLeader: "+19.842", IntervalToPositionAhead: { Value: "+1.981" }, InPit: true },
+    }));
+    expect(rows[3].gap.seconds).toBeNull();
+    expect(rows[3].interval.seconds).toBeNull();
+  });
+});

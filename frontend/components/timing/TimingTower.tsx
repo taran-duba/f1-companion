@@ -42,7 +42,7 @@ const COL = {
   best: "hidden @min-[560px]:table-cell",
   sectors: "hidden @min-[790px]:table-cell",
   pits: "hidden @min-[560px]:table-cell",
-  age: "hidden @min-[360px]:inline",
+  age: "hidden @min-[340px]:inline",
 };
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {

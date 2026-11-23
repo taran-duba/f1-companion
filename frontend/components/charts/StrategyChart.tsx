@@ -53,7 +53,7 @@ export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
   // Phone rows are tap targets: the highlight rect (rowH − 2) must stay ≥ 44px.
   const rowH = onSelect && narrow ? 46 : 28;
   const barH = 18;
-  const labelW = 64;
+  const labelW = 72; // fits a wide code like "KOW" with a gap before the first bar
   const plot: Plot = {
     left: labelW,
     top: 22,
