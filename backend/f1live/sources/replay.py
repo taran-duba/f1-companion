@@ -26,6 +26,54 @@ _MAX_STEP_S = 0.1
 _MIN_STEP_S = 0.005
 _EPS = 1e-6
 
+# TrackStatus codes worth marking on the seek bar. 6 and 7 (VSC / VSC ending)
+# share a group so one VSC deployment is one period.
+_PERIOD_GROUPS = {"2": ("yellow", "Yellow"), "4": ("sc", "Safety car"), "5": ("red", "Red flag"),
+                  "6": ("vsc", "Virtual safety car"), "7": ("vsc", "Virtual safety car")}
+
+
+def _as_int(v: Any) -> int | None:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def build_markers(messages: list[Message]) -> dict[str, list[dict[str, Any]]]:
+    """Lap starts and track-status periods on the recording's ``t`` axis.
+
+    ``laps``: ``[{t, lap}]`` whenever ``LapCount.CurrentLap`` changes.
+    ``periods``: ``[{start, end, status, label}]`` for yellow, safety car,
+    VSC and red flag windows (``status`` is yellow|sc|vsc|red). A period
+    still open at the end of the recording ends at the last message.
+    """
+    laps: list[dict[str, Any]] = []
+    periods: list[dict[str, Any]] = []
+    last_lap: int | None = None
+    open_period: dict[str, Any] | None = None
+    end_t = messages[-1].t if messages else 0.0
+    for m in messages:
+        data = m.data if isinstance(m.data, dict) else None
+        if data is None:
+            continue
+        if m.topic == "LapCount" and "CurrentLap" in data:
+            lap = _as_int(data.get("CurrentLap"))
+            if lap is not None and lap != last_lap:
+                laps.append({"t": round(m.t, 2), "lap": lap})
+                last_lap = lap
+        elif m.topic == "TrackStatus" and "Status" in data:
+            group = _PERIOD_GROUPS.get(str(data.get("Status")))
+            if open_period is not None and (group is None or group[0] != open_period["status"]):
+                open_period["end"] = round(m.t, 2)
+                periods.append(open_period)
+                open_period = None
+            if group is not None and open_period is None:
+                open_period = {"start": round(m.t, 2), "end": None, "status": group[0], "label": group[1]}
+    if open_period is not None:
+        open_period["end"] = round(end_t, 2)
+        periods.append(open_period)
+    return {"laps": laps, "periods": periods}
+
 
 class ReplaySource(Source):
     kind = "replay"
@@ -55,6 +103,7 @@ class ReplaySource(Source):
         self.start_t = messages[0].t if messages else 0.0
         self.end_t = messages[-1].t if messages else 0.0
         self._start_at = start_at
+        self.markers = build_markers(messages)
 
     # -- construction helpers ----------------------------------------------
     @classmethod
@@ -187,7 +236,7 @@ class ReplaySource(Source):
             "kind": self.kind, "state": state, "name": self.name, "path": self.path,
             "speed": self.speed, "position": round(self.position, 2),
             "start": self.start_t, "end": self.end_t, "messages": len(self.messages),
-            "applied": self._idx, "speeds": list(SPEEDS),
+            "applied": self._idx, "speeds": list(SPEEDS), "markers": self.markers,
         }
         if self.read_stats and self.read_stats.bad_lines:
             out["bad_lines"] = self.read_stats.bad_lines
