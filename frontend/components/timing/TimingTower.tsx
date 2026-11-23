@@ -51,37 +51,37 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
         </caption>
         <thead>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
-            <th scope="col" className="w-10 py-2 pr-2 text-right">
+            <th scope="col" className="w-10 py-1 pr-2 text-right">
               Pos
             </th>
-            <th scope="col" className="py-2 pl-1">
+            <th scope="col" className="py-1 pl-1">
               Driver
             </th>
-            <th scope="col" className="py-2 pr-3 text-right">
+            <th scope="col" className="py-1 pr-3 text-right">
               Interval
             </th>
-            <th scope="col" className={`py-2 pr-3 text-right ${c(COL.gap)}`}>
+            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.gap)}`}>
               Gap
             </th>
-            <th scope="col" className="py-2 pr-3 text-right">
+            <th scope="col" className="py-1 pr-3 text-right">
               Last lap
             </th>
-            <th scope="col" className={`py-2 pr-3 text-right ${c(COL.best)}`}>
+            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.best)}`}>
               Best
             </th>
-            <th scope="col" className={`py-2 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
               S1
             </th>
-            <th scope="col" className={`py-2 pr-2 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-2 text-right ${c(COL.sectors)}`}>
               S2
             </th>
-            <th scope="col" className={`py-2 pr-3 text-right ${c(COL.sectors)}`}>
+            <th scope="col" className={`py-1 pr-3 text-right ${c(COL.sectors)}`}>
               S3
             </th>
-            <th scope="col" className="py-2 pr-2">
+            <th scope="col" className="py-1 pr-2">
               Tyre
             </th>
-            <th scope="col" className={`py-2 pr-1 text-right ${c(COL.pits)}`}>
+            <th scope="col" className={`py-1 pr-1 text-right ${c(COL.pits)}`}>
               <abbr title="Pit stops" className="no-underline">
                 Pits
               </abbr>
@@ -125,11 +125,11 @@ const Row = memo(function Row({
     <tr
       aria-selected={selected}
       onClick={() => onSelect(r.num)}
-      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 hover:bg-raised lg:h-10 ${
+      className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 hover:bg-raised lg:h-9 ${
         selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : ""
       } ${out ? "text-muted" : ""}`}
     >
-      <td className="num w-10 pr-2 text-right text-title font-bold">
+      <td className="num w-10 pr-2 text-right align-middle text-title leading-none font-bold">
         <span className="inline-flex items-center justify-end gap-0.5">
           <PositionMove move={move} />
           {out ? <span className="text-small text-muted">—</span> : r.position}
@@ -144,7 +144,7 @@ const Row = memo(function Row({
           }}
           aria-pressed={selected}
           aria-label={`${r.name}, ${r.team}${selected ? ", selected" : ""}`}
-          className="flex min-h-11 items-center gap-2 rounded-chip pr-1 text-left lg:min-h-10"
+          className="flex min-h-11 items-center gap-2 rounded-chip pr-1 text-left lg:min-h-9"
         >
           <TeamBar colour={r.teamColour} />
           <span className="font-semibold tracking-wide">{r.code}</span>
@@ -157,7 +157,11 @@ const Row = memo(function Row({
         <Interval row={r} />
       </td>
       <td className={`num pr-3 text-right ${c(COL.gap)}`}>
-        <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: "Leader" })}</span>
+        {out ? (
+          <span className="text-faint">—</span>
+        ) : (
+          <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: "Leader" })}</span>
+        )}
       </td>
       <td className="pr-3 text-right">
         <Flash value={r.lastLap.value}>
@@ -187,6 +191,7 @@ const Row = memo(function Row({
 });
 
 function Interval({ row: r }: { row: TowerRow }) {
+  if (r.retired || r.stopped) return <span className="text-faint">—</span>;
   if (r.position === 1 || r.interval.leader) return <span className="text-muted">Leader</span>;
   const text = formatGap(r.interval);
   if (r.battle) {

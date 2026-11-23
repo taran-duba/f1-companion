@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       <FlagBand tone={status?.tone ?? "unknown"} label={status?.label ?? "Track status unknown"} />
       <header className="border-b border-line bg-bg">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 lg:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-1 lg:px-6">
           <Link href="/" className="mr-auto text-title font-bold tracking-tight text-text">
             F1 Companion
           </Link>
@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <Link
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center rounded-chip px-3 text-body transition-colors duration-150 hover:bg-raised ${
+                      className={`flex min-h-11 items-center rounded-chip px-3 lg:min-h-10 text-body transition-colors duration-150 hover:bg-raised ${
                         active ? "font-semibold text-text underline decoration-accent decoration-2 underline-offset-[6px]" : "text-muted"
                       }`}
                     >
@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-10 pt-3 outline-none lg:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-10 pt-2 outline-none lg:px-6">
         {children}
       </main>
     </>

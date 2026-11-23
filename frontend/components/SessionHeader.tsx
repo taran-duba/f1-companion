@@ -30,9 +30,9 @@ export function SessionHeader({ state }: { state: TimingState }) {
   const remaining = state.ExtrapolatedClock?.Remaining;
 
   return (
-    <section aria-label="Session" className="mb-3 flex flex-wrap items-stretch gap-x-6 gap-y-2 border-b border-line pb-3">
+    <section aria-label="Session" className="mb-1.5 flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-line pb-1.5">
       <div className="mr-auto min-w-0">
-        <h1 className="truncate text-title font-bold leading-tight lg:text-headline">{meeting}</h1>
+        <h1 className="truncate text-title font-bold leading-tight">{meeting}</h1>
         <p className="text-small text-muted">
           {session || "Session"}
           {status && <span className="ml-2 text-text">{SESSION_STATUS[status] ?? status}</span>}

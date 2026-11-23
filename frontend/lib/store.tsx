@@ -45,10 +45,16 @@ export function useTimingStream(): TimingStream | null {
 
 /** Re-render every `ms` (for "x s ago" style labels). */
 export function useNow(ms = 1000): number {
-  const [now, setNow] = useState(() => Date.now());
+  // 0 during prerender/hydration; the real clock starts in the effect.
+  const [now, setNow] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, ms);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
   }, [ms]);
   return now;
 }
