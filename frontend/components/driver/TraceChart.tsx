@@ -10,13 +10,25 @@ export interface TraceSeries {
   lap: number;
   ms: number | null;
   points: TracePoint[];
+  /** This lap is the fastest lap in the whole field. */
+  overall?: boolean;
 }
 
-/** Colour AND dash pattern distinguish the two laps (never colour alone). */
-const STYLE: Record<TraceSeries["id"], { stroke: string; dash?: string; glyph?: string }> = {
-  last: { stroke: "var(--color-text)" },
-  best: { stroke: "var(--color-sector-green)", dash: "6 4", glyph: "▲" },
-};
+type SeriesStyle = { stroke: string; dash?: string; glyph?: string; glyphClass?: string; glyphLabel?: string };
+
+/**
+ * Colour AND dash pattern distinguish the two laps (never colour alone). The best
+ * lap follows the sector-table convention: ▲ green for a personal best, ◆ purple
+ * when it is also the fastest lap in the field. The solid last lap keeps its
+ * colour but gains the ◆ when it is the fastest lap overall.
+ */
+function styleOf(s: Pick<TraceSeries, "id" | "overall">): SeriesStyle {
+  const fastest = { glyph: "◆", glyphClass: "text-sector-purple", glyphLabel: "fastest lap overall" };
+  if (s.id === "last") return { stroke: "var(--color-text)", ...(s.overall ? fastest : {}) };
+  return s.overall
+    ? { stroke: "var(--color-sector-purple)", dash: "6 4", ...fastest }
+    : { stroke: "var(--color-sector-green)", dash: "6 4", glyph: "▲", glyphClass: "text-sector-green", glyphLabel: "personal best" };
+}
 
 const VB_W = 1000;
 const VB_H = 100;
@@ -40,15 +52,18 @@ export const TraceChart = memo(function TraceChart({ series, note }: { series: T
     const speedMax = Math.max(100, Math.ceil((Math.max(0, ...tops) + 10) / 50) * 50);
     const thinned = series.map((s) => thin(s.points));
     const max: Record<Field, number> = { speed: speedMax, throttle: 100, brake: 100 };
-    const paths = {} as Record<Field, { id: TraceSeries["id"]; d: string }[]>;
+    const paths = {} as Record<Field, PathSpec[]>;
     for (const field of ["speed", "throttle", "brake"] as const) {
       // Draw best first so the last lap (solid) sits on top.
       paths[field] = series
-        .map((s, i) => ({ id: s.id, d: pathFor(thinned[i], field, max[field], maxDist) }))
+        .map((s, i) => ({ id: s.id, style: styleOf(s), d: pathFor(thinned[i], field, max[field], maxDist) }))
         .sort((a, b) => (a.id === "best" ? -1 : 0) - (b.id === "best" ? -1 : 0));
     }
     const summary = series
-      .map((s, i) => `${s.label}, lap ${s.lap}, ${formatMs(s.ms)}, top speed ${Math.round(tops[i])} km/h`)
+      .map(
+        (s, i) =>
+          `${s.label}, lap ${s.lap}, ${formatMs(s.ms)}${s.overall ? " (fastest lap overall)" : ""}, top speed ${Math.round(tops[i])} km/h`,
+      )
       .join(". ");
     return { maxDist, speedMax, paths, summary };
   }, [series]);
@@ -102,7 +117,7 @@ export const TraceChart = memo(function TraceChart({ series, note }: { series: T
           <Row label="Brake" unit="%" max={100} ticks={[100]} heightClass="h-10" paths={paths.brake} maxDist={maxDist} cursor={cursor} />
         </div>
         <div className="flex">
-          <div className="w-12 shrink-0" />
+          <div className="w-14 shrink-0" />
           <div className="relative h-5 flex-1 text-micro font-normal text-faint" aria-hidden="true">
             {ticks.map((d, i) => (
               <span
@@ -140,7 +155,7 @@ function Row({
   max: number;
   ticks: number[];
   heightClass: string;
-  paths: { id: TraceSeries["id"]; d: string }[];
+  paths: PathSpec[];
   maxDist: number;
   cursor: number | null;
   plotRef?: React.Ref<HTMLDivElement>;
@@ -149,12 +164,12 @@ function Row({
   return (
     <div className="border-t border-line pt-1 first:border-t-0 first:pt-0">
       {scaled && (
-        <div className="pl-12 text-micro text-muted" aria-hidden="true">
+        <div className="pl-14 text-micro text-muted" aria-hidden="true">
           {label} <span className="font-normal text-faint">({unit})</span>
         </div>
       )}
       <div className="flex">
-        <div className="relative w-12 shrink-0 pr-2 text-right" aria-hidden="true">
+        <div className="relative w-14 shrink-0 pr-2 text-right" aria-hidden="true">
           {scaled ? (
             ticks.map((t) => (
               <span
@@ -180,8 +195,8 @@ function Row({
                 key={s.id}
                 d={s.d}
                 fill="none"
-                stroke={STYLE[s.id].stroke}
-                strokeDasharray={STYLE[s.id].dash}
+                stroke={s.style.stroke}
+                strokeDasharray={s.style.dash}
                 strokeWidth={1.5}
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
@@ -200,29 +215,40 @@ function Row({
 function Legend({ series }: { series: TraceSeries[] }) {
   return (
     <ul className="flex flex-wrap gap-x-6 gap-y-1 text-small">
-      {series.map((s) => (
-        <li key={s.id} className="flex items-center gap-2">
-          <Swatch id={s.id} />
-          <span className="text-muted">
-            {STYLE[s.id].glyph && (
-              <span aria-hidden="true" className="mr-1 text-micro text-sector-green">
-                {STYLE[s.id].glyph}
-              </span>
-            )}
-            {s.label}
-          </span>
-          <span className="num text-text">Lap {s.lap}</span>
-          <span className="num font-semibold text-text">{formatMs(s.ms)}</span>
-        </li>
-      ))}
+      {series.map((s) => {
+        const st = styleOf(s);
+        return (
+          <li key={s.id} className="flex items-center gap-2">
+            <Swatch series={s} />
+            <span className="text-muted">
+              {st.glyph && (
+                <span aria-hidden="true" className={`mr-1 text-micro ${st.glyphClass}`}>
+                  {st.glyph === "◆" ? <span className="glyph-diamond">◆</span> : st.glyph}
+                </span>
+              )}
+              {s.label}
+              {st.glyphLabel && <span className="sr-only"> ({st.glyphLabel})</span>}
+            </span>
+            <span className="num text-text">Lap {s.lap}</span>
+            <span className="num font-semibold text-text">{formatMs(s.ms)}</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
-function Swatch({ id }: { id: TraceSeries["id"] }) {
+interface PathSpec {
+  id: TraceSeries["id"];
+  style: SeriesStyle;
+  d: string;
+}
+
+function Swatch({ series }: { series: Pick<TraceSeries, "id" | "overall"> }) {
+  const st = styleOf(series);
   return (
     <svg width="28" height="8" aria-hidden="true" className="shrink-0">
-      <line x1="0" x2="28" y1="4" y2="4" stroke={STYLE[id].stroke} strokeWidth="2" strokeDasharray={STYLE[id].dash} />
+      <line x1="0" x2="28" y1="4" y2="4" stroke={st.stroke} strokeWidth="2" strokeDasharray={st.dash} />
     </svg>
   );
 }
@@ -256,9 +282,12 @@ function Readout({ series, cursor }: { series: TraceSeries[]; cursor: number | n
           const p = sampleAt(s.points, cursor);
           return (
             <tr key={s.id}>
-              <th scope="row" className="flex items-center gap-2 pr-4 text-left font-normal text-muted">
-                <Swatch id={s.id} />
-                <span className="num">Lap {s.lap}</span>
+              {/* Flex on an inner span: a flex <th> drops out of table layout and sits above the row's values. */}
+              <th scope="row" className="pr-4 text-left font-normal text-muted">
+                <span className="flex items-center gap-2">
+                  <Swatch series={s} />
+                  <span className="num">Lap {s.lap}</span>
+                </span>
               </th>
               <td className="num pr-4 text-right font-semibold">{p ? Math.round(p.speed) : "—"}</td>
               <td className="num pr-4 text-right">{p ? `${Math.round(p.throttle)}%` : "—"}</td>

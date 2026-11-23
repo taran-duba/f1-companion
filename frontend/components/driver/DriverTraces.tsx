@@ -13,8 +13,23 @@ const MIN_COVERAGE = 0.85;
 
 export const NO_TOKEN_MESSAGE = "Car telemetry needs an F1 TV token in live mode. Timing still works.";
 
-/** Last lap vs best lap telemetry traces for one driver. */
-export function DriverTraces({ state, num }: { state: TimingState; num: string }) {
+/**
+ * Last lap vs best lap telemetry traces for one driver. `ended` says why no more
+ * laps will come ("retired", "stopped" or "finished"), so an empty panel doesn't
+ * promise traces that will never arrive.
+ */
+export function DriverTraces({
+  state,
+  num,
+  fieldMs = null,
+  ended = null,
+}: {
+  state: TimingState;
+  num: string;
+  /** Fastest lap in the whole field (ms). */
+  fieldMs?: number | null;
+  ended?: "retired" | "stopped" | "finished" | null;
+}) {
   const laps = state.TimingData?.Lines?.[num]?.NumberOfLaps ?? 0;
   const missing = useTelemetryMissing(state);
   const result = useTraces(num, laps);
@@ -33,7 +48,9 @@ export function DriverTraces({ state, num }: { state: TimingState; num: string }
       // The backend keeps the fastest lap it has telemetry for, which may not be
       // the driver's best lap (e.g. after seeking into a replay).
       const label = id === "last" ? "Last lap" : t.ms != null && t.ms === bestMs ? "Best lap" : "Fastest traced lap";
-      out.push({ id, label, lap: t.lap, ms: t.ms, points });
+      // Fastest lap in the field: the best-lap series turns purple ◆ (as in the sector table).
+      const overall = t.ms != null && fieldMs != null && t.ms === fieldMs;
+      out.push({ id, label, lap: t.lap, ms: t.ms, points, overall });
     }
     // A lap recorded from mid-lap (source switch or replay seek) covers only part
     // of the track: overlaying it would look like a missing line, so leave it out.
@@ -48,14 +65,29 @@ export function DriverTraces({ state, num }: { state: TimingState; num: string }
       note = "The last lap is also the fastest lap with telemetry so far. A comparison appears after the next lap.";
     }
     return { series: complete.length ? complete : out, note };
-  }, [result.data, bestMs]);
+  }, [result.data, bestMs, fieldMs]);
 
   if (missing) return <EmptyState>{NO_TOKEN_MESSAGE}</EmptyState>;
   if (result.status === "loading") {
     return <div className="h-60 rounded-chip bg-raised" aria-busy="true" aria-label="Loading traces" />;
   }
   if (result.status === "error" && !series.length) {
-    return <EmptyState>Couldn&apos;t load traces: {/[.!?]$/.test(result.error) ? result.error : `${result.error}.`} They reload when the driver completes the next lap.</EmptyState>;
+    const reason = /[.!?]$/.test(result.error) ? result.error : `${result.error}.`;
+    return (
+      <EmptyState>
+        Couldn&apos;t load traces: {reason}{" "}
+        {ended ? "Reload the page to try again." : "They reload when the driver completes the next lap."}
+      </EmptyState>
+    );
+  }
+  if (!series.length && ended) {
+    return (
+      <EmptyState>
+        {ended === "finished"
+          ? "No telemetry traces were recorded for this driver in this session."
+          : `No telemetry traces were recorded for this car before it ${ended === "retired" ? "retired" : "stopped"}.`}
+      </EmptyState>
+    );
   }
   if (!series.length) {
     return (

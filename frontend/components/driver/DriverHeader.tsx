@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Chip, MarkedTime, TeamBar, TyreBadge, tyreName } from "@/components/timing/Atoms";
-import { formatGap, type TowerRow } from "@/lib/timing";
+import type { TowerRow } from "@/lib/timing";
+import { GapText } from "./DriverCard";
 
 /** Driver identity, race situation and prev/next navigation by position. */
 export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRow | null; next: TowerRow | null }) {
@@ -23,13 +24,27 @@ export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRo
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="num text-headline font-bold">
-              {out ? <span className="text-muted">—</span> : <><span className="sr-only">Position </span>P{row.position}</>}
+              {/* The DNF / Stopped chip says why; a screen reader shouldn't announce a bare dash. */}
+              {out ? (
+                <span aria-hidden="true" className="text-muted">
+                  —
+                </span>
+              ) : (
+                <>
+                  <span className="sr-only">Position </span>P{row.position}
+                </>
+              )}
             </span>
             <h1 className="text-headline font-bold tracking-wide">{row.code}</h1>
             <span className="min-w-0 truncate text-title font-semibold">{row.name}</span>
             {row.inPit && <Chip tone="warn">In pit</Chip>}
             {row.pitOut && !row.inPit && <Chip tone="warn">Out lap</Chip>}
-            {row.retired && <Chip tone="danger">Retired</Chip>}
+            {/* "DNF" as in the tower, cards and strategy chart; the title spells it out. */}
+            {row.retired && (
+              <Chip tone="danger" title="Did not finish (retired)">
+                DNF
+              </Chip>
+            )}
             {row.stopped && !row.retired && <Chip tone="danger">Stopped</Chip>}
           </div>
           <p className="text-small text-muted">{row.team || "Team unknown"}</p>
@@ -52,10 +67,15 @@ export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRo
           <span className="num">{row.pits}</span>
         </Stat>
         <Stat label="Gap to leader">
-          <span className="num">{formatGap(row.gap)}</span>
+          {/* A retired or stopped car's last gap is stale: show none, as the tower does. */}
+          <span className="num">
+            <GapText gap={row.gap} out={out} leader={row.position === 1} />
+          </span>
         </Stat>
         <Stat label="Interval">
-          <span className="num">{formatGap(row.interval)}</span>
+          <span className="num">
+            <GapText gap={row.interval} out={out} leader={row.position === 1} />
+          </span>
         </Stat>
         <Stat label="Last lap">
           {/* Yellow ("slower than personal best") has no glyph and no legend here, so show it plain. */}
@@ -92,6 +112,8 @@ function NavLink({ href, children, className = "", label }: { href: string; chil
 
 function DriverLink({ target, dir }: { target: TowerRow | null; dir: "prev" | "next" }) {
   const word = dir === "prev" ? "Previous" : "Next";
+  // A retired or stopped car has no race position (its own header shows "—"), so don't label it "P20".
+  const out = !!target && (target.retired || target.stopped);
   if (!target) {
     return (
       <span className="inline-flex min-h-11 flex-1 items-center justify-center rounded-chip border border-line px-3 text-body text-faint md:flex-none">
@@ -103,9 +125,12 @@ function DriverLink({ target, dir }: { target: TowerRow | null; dir: "prev" | "n
     <NavLink
       href={`/driver/${encodeURIComponent(target.code)}`}
       className={`flex-1 md:flex-none ${dir === "prev" ? "justify-start" : "justify-end"}`}
-      label={`${word} driver: P${target.position} ${target.code}, ${target.name}`}>
+      label={`${word} driver: ${out ? "" : `P${target.position} `}${target.code}, ${target.name}${
+        out ? (target.retired ? ", retired" : ", stopped") : ""
+      }`}
+    >
       {dir === "prev" && <span aria-hidden="true">←</span>}
-      <span className="num text-muted">P{target.position}</span>
+      <span className="num text-muted">{out ? "—" : `P${target.position}`}</span>
       <span className="font-semibold">{target.code}</span>
       {dir === "next" && <span aria-hidden="true">→</span>}
     </NavLink>

@@ -12,12 +12,24 @@ import {
   niceTicks,
   pitStops,
   scaleLinear,
+  type NeutralWindow,
   type Scale,
 } from "@/lib/charts";
 import { formatMs } from "@/lib/timing";
 import type { LapRecord } from "@/lib/types";
 import { EmptyState } from "../Panel";
-import { ChartFigure, ChartSvg, HALO, LapAxis, LegendItem, PitChip, PitMarker, YGrid, type Plot } from "./ChartParts";
+import {
+  ChartFigure,
+  ChartSvg,
+  HALO,
+  LapAxis,
+  LegendItem,
+  NeutralBand,
+  PitChip,
+  PitMarker,
+  YGrid,
+  type Plot,
+} from "./ChartParts";
 import { useChartWidth } from "./useChartWidth";
 
 interface Props {
@@ -35,6 +47,8 @@ interface Props {
    * Omitted: falls back to the lap's own `overallBest` flag.
    */
   overallBestMs?: number | null;
+  /** Safety car / VSC lap windows, shaded so slow or off-scale laps under them explain themselves. */
+  neutral?: NeutralWindow[];
 }
 
 const STRIP_H = 18;
@@ -49,6 +63,7 @@ export function LapTimeChart({
   label = "This driver",
   compareLabel = "Comparison",
   overallBestMs,
+  neutral = [],
 }: Props) {
   const { ref, width } = useChartWidth();
   const timed = laps.filter((l) => l.ms != null && l.ms > 0);
@@ -56,7 +71,7 @@ export function LapTimeChart({
 
   if (timed.length < 2 || !domain) {
     return (
-      <EmptyState>Lap times appear after two completed laps. Check back once the car has crossed the line twice.</EmptyState>
+      <EmptyState>Lap times appear after two completed laps. This chart updates on its own as each lap is finished.</EmptyState>
     );
   }
 
@@ -86,12 +101,16 @@ export function LapTimeChart({
   const stops = pitStops(laps);
   const offScale = clean.filter((l) => (l.ms as number) > domain[1]);
   const two = !!compareLaps?.length;
+  const windows = neutral.filter((w) => w.end >= minLap && w.start <= maxLap);
 
   const summary =
     `Lap times for ${label} over ${timed.length} laps, laps ${minLap} to ${maxLap}.` +
     (best ? ` Best lap ${formatMs(best.ms)} on lap ${best.lap}${overall ? ", the fastest lap overall" : ""}.` : "") +
     (pits.length ? ` In and out laps, left out of the scale: ${pits.map((l) => l.lap).join(", ")}.` : "") +
     (offScale.length ? ` Off the top of the scale: laps ${offScale.map((l) => l.lap).join(", ")}.` : "") +
+    (windows.length
+      ? ` ${windows.map((w) => `${w.kind === "SC" ? "Safety car" : "Virtual safety car"} laps ${w.start} to ${w.end}`).join("; ")}.`
+      : "") +
     ` Tyres: ${runs.map((r) => `${COMPOUND_STYLE[r.compound].name} laps ${r.start} to ${r.end}`).join("; ")}.` +
     (two ? ` Compared with ${compareLabel}, drawn dashed with square markers.` : "");
 
@@ -99,6 +118,15 @@ export function LapTimeChart({
     <div className="flex flex-col gap-2">
       <ChartFigure summary={summary} innerRef={ref}>
         <ChartSvg width={width} height={height}>
+          {windows.map((w, i) => (
+            <NeutralBand
+              key={i}
+              x0={x(Math.max(w.start, minLap) - 0.5)}
+              x1={x(Math.min(w.end, maxLap) + 0.5)}
+              plot={plot}
+              label={w.kind}
+            />
+          ))}
           <YGrid y={y} ticks={yTicks} plot={plot} format={(v) => formatLapTick(v, step)} title="Lap time (m:ss)" />
           <LapAxis x={x} ticks={xTicks} plot={axisPlot} labelGap={STRIP_H + 20} />
           {runs.map((r, i) => {
@@ -118,8 +146,8 @@ export function LapTimeChart({
                   stroke={st.colour}
                   strokeWidth={1}
                 />
-                {/* 12px letter needs ~14px; narrower runs rely on the summary and stint list. */}
-                {w >= 14 && (
+                {/* 12px letter needs ~14px and must clear the 16px pit chips; otherwise the summary and stint list carry it. */}
+                {w >= 14 && stops.every((p) => Math.abs(x0 + w / 2 - x(p.at)) >= 14) && (
                   <text
                     x={x0 + w / 2}
                     y={stripY + STRIP_H / 2}
@@ -151,7 +179,7 @@ export function LapTimeChart({
         {overall ? (
           <span>
             <span aria-hidden="true" className="mr-1 text-sector-purple">
-              ◆
+              <span className="glyph-diamond">◆</span>
             </span>
             Fastest overall
           </span>
@@ -167,6 +195,16 @@ export function LapTimeChart({
           <PitChip />
           Pit stop (in and out laps not plotted)
         </span>
+        {windows.length > 0 && (
+          <span>
+            <span aria-hidden="true" className="mr-1 inline-block h-3 w-4 border-t-2 border-flag-yellow bg-raised align-middle" />
+            {windows.some((w) => w.kind === "VSC")
+              ? windows.some((w) => w.kind === "SC")
+                ? "Safety car (SC) or virtual (VSC)"
+                : "Virtual safety car"
+              : "Safety car"}
+          </span>
+        )}
         {offScale.length > 0 && (
           <span>
             <span aria-hidden="true" className="mr-1">
@@ -219,7 +257,9 @@ function Series({
           <text
             key={`off-${l.lap}`}
             x={x(l.lap)}
-            y={plot.top + 4}
+            // Just above the plot (inside it they'd sit on a safety-car band's edge and label),
+            // except under the "Lap time" axis title at the left.
+            y={x(l.lap) < plot.left + 110 ? plot.top + 12 : plot.top - 3}
             textAnchor="middle"
             className="text-micro font-bold"
             fill={colour}
@@ -237,7 +277,7 @@ function BestMarker({ x, y, text, right, overall }: { x: number; y: number; text
   const fill = overall ? "fill-sector-purple" : "fill-sector-green";
   return (
     <g>
-      <text x={x} y={y} dy="0.38em" textAnchor="middle" className={`${fill} text-[13px]`}>
+      <text x={x} y={y} dy="0.38em" textAnchor="middle" className={`${fill} ${overall ? "text-[17px]" : "text-[13px]"}`}>
         {overall ? "◆" : "▲"}
       </text>
       <text

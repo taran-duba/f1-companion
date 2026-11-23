@@ -172,7 +172,7 @@ function StrategyBarRow({
         ? {
             role: "button",
             tabIndex: 0,
-            "aria-label": `${row.code}${row.position < 99 ? `, position ${row.position}` : ""}${row.retired ? ", out" : ""}`,
+            "aria-label": `${row.code}${row.position < 99 ? `, position ${row.position}` : ""}${row.retired ? ", retired" : row.stopped ? ", stopped" : ""}`,
             ...(selected === undefined ? {} : { "aria-pressed": selected }),
             onClick: () => onSelect?.(row.num),
             onKeyDown: onKey,
@@ -274,14 +274,15 @@ function StrategyBarRow({
             ) : null,
           )}
       </g>
+      {/* "DNF" only for a retirement; a stopped car may still be classified or restart. */}
       {(row.retired || row.stopped) && spans.length > 0 && (
         <text
-          x={Math.min(x(Math.max(0, ...spans.map((s) => s.end))) + 6, plot.right - 24)}
+          x={Math.min(x(Math.max(0, ...spans.map((s) => s.end))) + 6, plot.right - (row.retired ? 24 : 52))}
           y={cy}
           dy="0.35em"
           className="fill-danger text-micro font-bold"
         >
-          DNF
+          {row.retired ? "DNF" : "Stopped"}
         </text>
       )}
     </g>

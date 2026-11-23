@@ -22,7 +22,7 @@ export function StrategyTable({ data, totalLaps }: { data: StrategyRow[]; totalL
               <td>{row.position < 99 ? row.position : "—"}</td>
               <th scope="row">
                 {row.code}
-                {row.retired ? " (out)" : ""}
+                {row.retired ? " (retired)" : row.stopped ? " (stopped)" : ""}
               </th>
               <td>{Math.max(0, spans.length - 1)}</td>
               <td>

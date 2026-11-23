@@ -14,8 +14,11 @@ const FILL: Record<Compound, string> = {
 
 const LETTER: Record<Compound, string> = { SOFT: "S", MEDIUM: "M", HARD: "H", INTERMEDIATE: "I", WET: "W", UNKNOWN: "?" };
 
-/** One driver's tyre stints: a bar across the race distance plus a list. */
-export function StintList({ stints, totalLaps }: { stints: StintView[]; totalLaps: number | null }) {
+/**
+ * One driver's tyre stints: a bar across the race distance plus a list. Once the car
+ * has retired or the race is over (`ended`), the last stint is "Final", not "Current".
+ */
+export function StintList({ stints, totalLaps, ended = false }: { stints: StintView[]; totalLaps: number | null; ended?: boolean }) {
   if (!stints.length) {
     return <EmptyState>No tyre data yet. Stints appear once the timing feed reports this driver&apos;s tyres.</EmptyState>;
   }
@@ -35,10 +38,23 @@ export function StintList({ stints, totalLaps }: { stints: StintView[]; totalLap
             >
               {s.laps / scale > 0.06 && LETTER[s.compound]}
             </div>
+          ) : s.current && !ended ? (
+            // Set just fitted, no laps on it yet: an outlined chip, as in the strategy chart.
+            <div
+              key={s.index}
+              className="flex w-6 shrink-0 items-center justify-center rounded-chip border-2 text-micro font-bold"
+              style={{ borderColor: FILL[s.compound], color: FILL[s.compound] }}
+            >
+              {LETTER[s.compound]}
+            </div>
           ) : null,
         )}
+        {/* Laps still to run: dashed outline. A retired car will never run them, so leave the space empty. */}
         {remaining > 0 && (
-          <div className="rounded-r-chip border border-dashed border-line-control" style={{ flexGrow: remaining, flexBasis: 0 }} />
+          <div
+            className={ended ? "" : "rounded-r-chip border border-dashed border-line-control"}
+            style={{ flexGrow: remaining, flexBasis: 0 }}
+          />
         )}
       </div>
       {totalLaps ? (
@@ -55,7 +71,7 @@ export function StintList({ stints, totalLaps }: { stints: StintView[]; totalLap
             <div className="min-w-0 flex-1">
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-semibold">{tyreName(s.compound)}</span>
-                {s.current && <Chip tone="muted">Current</Chip>}
+                {s.current && <Chip tone="muted">{ended ? "Final" : "Current"}</Chip>}
               </p>
               <p className="flex flex-wrap gap-x-3 text-small text-muted">
                 <span className="num">Stint {s.index + 1}</span>

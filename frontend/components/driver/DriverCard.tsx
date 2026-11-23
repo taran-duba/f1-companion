@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Chip, MarkedTime, TeamBar, TyreBadge, tyreName } from "@/components/timing/Atoms";
-import { formatGap, type TowerRow } from "@/lib/timing";
+import { formatGap, type Gap, type TowerRow } from "@/lib/timing";
 
 const href = (row: TowerRow) => `/driver/${encodeURIComponent(row.code)}`;
 
@@ -17,6 +17,17 @@ function StatusChips({ row }: { row: TowerRow }) {
 
 /** Retired or stopped cars have no meaningful position or gap. */
 const isOut = (row: TowerRow) => row.retired || row.stopped;
+
+/**
+ * A gap or interval as the tower shows it: "—" in faint when there is no value
+ * (or the car is out), "Leader" in muted, otherwise the time in full strength.
+ */
+export function GapText({ gap, out = false, leader = false }: { gap: Gap; out?: boolean; leader?: boolean }) {
+  if (out) return <span className="text-faint">—</span>;
+  if (leader || gap.leader) return <span className="text-muted">Leader</span>;
+  const text = formatGap(gap);
+  return text === "—" ? <span className="text-faint">—</span> : <>{text}</>;
+}
 
 /** Driver summary card for the /driver index (≥640px); the whole card links to the detail page. */
 export function DriverCard({ row }: { row: TowerRow }) {
@@ -48,13 +59,20 @@ export function DriverCard({ row }: { row: TowerRow }) {
           <div>
             <dt className="text-micro text-muted">Last lap</dt>
             <dd className="text-body font-medium">
-              {/* No legend on the card: drop colour-only yellow, keep ◆/▲ marks. */}
-              <MarkedTime value={row.lastLap.value} mark={row.lastLap.mark === "yellow" ? "none" : row.lastLap.mark} />
+              {out ? (
+                // A retired or stopped car's last lap is history: plain, in the card's muted colour (as the tower).
+                row.lastLap.value ? <span className="num">{row.lastLap.value}</span> : <span className="text-faint">—</span>
+              ) : (
+                // No legend on the card: drop colour-only yellow, keep ◆/▲ marks.
+                <MarkedTime value={row.lastLap.value} mark={row.lastLap.mark === "yellow" ? "none" : row.lastLap.mark} />
+              )}
             </dd>
           </div>
           <div>
             <dt className="text-micro text-muted">Gap</dt>
-            <dd className="num text-body font-medium">{out ? <span className="text-faint">—</span> : formatGap(row.gap)}</dd>
+            <dd className="num text-body font-medium">
+              <GapText gap={row.gap} out={out} leader={row.position === 1} />
+            </dd>
           </div>
         </dl>
       </div>
@@ -93,7 +111,7 @@ export function DriverRow({ row }: { row: TowerRow }) {
       </span>
       <span className="num w-[4.5rem] shrink-0 text-right font-medium">
         <span className="sr-only">, gap </span>
-        {out ? <span className="text-faint">—</span> : formatGap(row.gap)}
+        <GapText gap={row.gap} out={out} leader={row.position === 1} />
       </span>
     </Link>
   );

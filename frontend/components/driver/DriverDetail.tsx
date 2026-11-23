@@ -10,9 +10,12 @@ import { SectorTable } from "@/components/driver/SectorTable";
 import { StintList } from "@/components/driver/StintList";
 import { LoadingState } from "@/components/LoadingState";
 import { Panel } from "@/components/Panel";
+import { neutralWindows } from "@/lib/charts";
+import { asList } from "@/lib/merge";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useStream } from "@/lib/store";
-import { findDriverByCode, lapHistory, stints, towerRows } from "@/lib/timing";
+import { findDriverByCode, lapHistory, stints, towerRows, trackStatus } from "@/lib/timing";
+import type { RaceControlMessage } from "@/lib/types";
 
 /** Client body of /driver/[code]; params stay a Promise (Next 16) and are read with use(). */
 export function DriverDetail({ params }: { params: Promise<{ code: string }> }) {
@@ -23,6 +26,17 @@ export function DriverDetail({ params }: { params: Promise<{ code: string }> }) 
 
   const rows = useMemo(() => (state ? towerRows(state) : []), [state]);
   const field = useMemo(() => (state ? fieldBests(state) : null), [state]);
+  // Safety car / VSC windows: explain the slow and off-scale laps on the lap chart.
+  const neutral = useMemo(
+    () =>
+      state
+        ? neutralWindows(
+            asList<RaceControlMessage>(state.RaceControlMessages?.Messages).filter(Boolean),
+            state.LapCount?.CurrentLap,
+          )
+        : [],
+    [state],
+  );
 
   if (!state) return <LoadingState />;
 
@@ -52,20 +66,34 @@ export function DriverDetail({ params }: { params: Promise<{ code: string }> }) 
 
   const laps = lapHistory(state, num);
   const stintList = stintViews(stints(state, num));
+  // Why this car won't add laps: retired/stopped, or the chequered flag is out.
+  const ended = row.retired
+    ? "retired"
+    : row.stopped
+      ? "stopped"
+      : trackStatus(state).tone === "chequered"
+        ? "finished"
+        : null;
 
   const lapTimes = (
     <Panel id="lap-times" title="Lap times" meta={laps.length ? <span className="num">{laps.length} laps</span> : undefined}>
-      <LapTimeChart laps={laps} colour={row.teamColour} label={row.code} overallBestMs={field?.ms ?? null} />
+      <LapTimeChart
+        laps={laps}
+        colour={row.teamColour}
+        label={row.code}
+        overallBestMs={field?.ms ?? null}
+        neutral={neutral}
+      />
     </Panel>
   );
   const stintPanel = (
     <Panel id="stints" title="Tyre stints">
-      <StintList stints={stintList} totalLaps={state.LapCount?.TotalLaps ?? null} />
+      <StintList stints={stintList} totalLaps={state.LapCount?.TotalLaps ?? null} ended={ended != null} />
     </Panel>
   );
   const traces = (
     <Panel id="traces" title="Telemetry traces" meta="Last lap against best lap">
-      <DriverTraces state={state} num={num} />
+      <DriverTraces state={state} num={num} fieldMs={field?.ms ?? null} ended={ended} />
     </Panel>
   );
   const table = (
