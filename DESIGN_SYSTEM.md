@@ -36,7 +36,7 @@ distance reading), tuned toward blue-black so team colours and sector colours po
 | `line-control` | `#65728E` | Borders of interactive controls (≥3:1 vs surfaces) | — |
 | `text` | `#F3F5F9` | Primary text, all timing numbers | — |
 | `muted` | `#A9B3C7` | Secondary labels, column headers | ≥ 8.0:1 everywhere |
-| `faint` | `#8590A6` | Tertiary text (timestamps, units) | ≥ 5.3:1 everywhere |
+| `faint` | `#b8a1a5` | Tertiary text (timestamps, units) | ≥ 5.3:1 everywhere |
 | `accent` | `#5CC8FF` | Focus ring, selection, links, primary controls | ≥ 9.0:1 |
 
 Rule: **no text colour below `faint`**. Every listed foreground clears WCAG AA (4.5:1) on all
@@ -107,7 +107,7 @@ jitter as digits change.
 
 | Token | Size / line height | Weight | Use |
 |---|---|---|---|
-| `text-micro` | 12 / 16 | 600, sentence case | Units, chip text. Minimum size anywhere. Column headers use 13–14px sentence case (DESIGN_PLAN revision 1). |
+| `text-micro` | 13 / 18 | 600, sentence case | Units, chip text. Minimum size anywhere. Column headers use 13–14px sentence case (DESIGN_PLAN revision 1). |
 | `text-small` | 14 / 20 | 400–500 | Secondary info, race control body |
 | `text-body` | 16 / 24 | 400 | Default body; tower cells on phone |
 | `text-row` | 17 / 24 | 500 | Tower cells on desktop |
