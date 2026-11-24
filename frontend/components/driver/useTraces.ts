@@ -42,7 +42,7 @@ export function useTraces(num: string, laps: number): TracesResult {
   return result.value;
 }
 
-/** Live mode without an F1 TV token carries no car telemetry (DECISIONS.md D1). */
+/** Live mode without an F1 TV token carries no car telemetry (docs/DECISIONS.md D1). */
 export function useTelemetryMissing(state: TimingState | null): boolean {
   const { status } = useStream();
   return status?.source.kind === "live" && state?.Feed?.telemetry === false;

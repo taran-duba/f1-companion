@@ -4,8 +4,13 @@ A personal race-day second screen: live timing tower, session status, race contr
 per-driver telemetry and a track map, fed by F1's live timing stream — or by a replay of a
 recording, a past session via FastF1, or a bundled **synthetic** demo race.
 
-Personal use only. Nothing is hosted, and no F1 data is committed to this repo (the demo
+Bring your own credentials: the demo needs none, and live telemetry or past sessions use
+your own F1 TV account. Nothing is hosted, and no F1 data is committed to this repo (the demo
 race is generated, with fictional drivers and teams).
+
+> Unofficial fan project. Not affiliated with, endorsed by or connected to Formula 1, the FIA
+> or any team. F1, FORMULA ONE and related marks belong to their owners. The live feed is for
+> personal use only; follow F1's terms and don't redistribute its data.
 
 ```
 backend/   Python: ingest (live / replay / FastF1), state store, FastAPI SSE server
@@ -13,9 +18,13 @@ frontend/  Next.js (App Router) + Tailwind + TypeScript dashboard
 data/demo/ synthetic demo race fixture (generated, committed)
 data/recordings/  your own recordings (gitignored)
 scripts/   screenshot / layout check tool
+docs/      setup guide, protocol findings (DECISIONS.md), design system
+.env.example  every setting the backend reads (copy to .env)
 ```
 
 ## Setup
+
+Full guide, including where credentials go: **[docs/SETUP.md](docs/SETUP.md)**.
 
 Requirements: Python 3.11+ (tested on 3.13), Node 20+ (tested on 24).
 
@@ -24,6 +33,9 @@ python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
 cd frontend && npm install
 ```
+
+Credentials are optional. To use yours, `cp .env.example .env` and fill in what you need
+(`.env` is gitignored).
 
 ## Run the demo (no network needed)
 
@@ -91,7 +103,7 @@ cd backend && F1_SOURCE=live ../.venv/bin/python -m f1live serve
 ```
 
 or pick **Live timing** from the source chip (top right). What to expect (tested 2026-11-22, see
-DECISIONS.md D1):
+docs/DECISIONS.md D1):
 
 - The legacy `/signalr` endpoint described in most guides now returns **401**.
 - The client uses F1's current **SignalR Core** endpoint by default (`F1_TRANSPORT=core`).
@@ -161,8 +173,8 @@ UTC timestamp. The full Subscribe snapshot comes first, one line per topic, flag
 ## Tests
 
 ```bash
-cd backend && ../.venv/bin/python -m pytest -q     # 109 tests
-cd frontend && npm test                             # 74 tests
+cd backend && ../.venv/bin/python -m pytest -q
+cd frontend && npm test
 ```
 
 Backend tests cover the `.z` decoder, deep merge (index-keyed lists, `_deleted`), replay
@@ -221,3 +233,7 @@ Either way: keep it private. The F1 feed is for personal use; don't expose it pu
 - The demo can't reproduce everything the real feed does (e.g. qualifying sessions, red
   flags with restarts); those paths are only tested with unit tests.
 - No authentication on the API. Bind to `127.0.0.1` (default) unless on a trusted LAN.
+
+## License
+
+[MIT](LICENSE).

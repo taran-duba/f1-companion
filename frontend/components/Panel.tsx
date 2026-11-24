@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Bordered secondary panel (the tower itself is not a panel — see DESIGN_PLAN). */
+/** Bordered secondary panel (the tower itself is not a panel; see docs/DESIGN_SYSTEM.md). */
 export function Panel({
   title,
   meta,

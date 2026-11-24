@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Design tokens — see DESIGN_SYSTEM.md. These are the Broadcast theme's values; the theme
+/* Design tokens — see docs/DESIGN_SYSTEM.md. These are the Broadcast theme's values; the theme
    picker (lib/theme) overrides every colour below at runtime on <html>, and the colours
    are derived from five picked ones (lib/theme/themes.ts), so keep the two in step. */
 @theme {

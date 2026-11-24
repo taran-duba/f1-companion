@@ -19,3 +19,5 @@ data/credentials.json
 data/credentials.tmp
 .DS_Store
 .claude-flow/
+.claude/
+.impeccable/

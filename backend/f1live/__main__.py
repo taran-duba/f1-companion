@@ -25,6 +25,11 @@ def main() -> None:
     if args.cmd == "serve":
         import uvicorn
 
+        from . import env
+
+        # Before .server: settings such as F1TV_TOKEN are read when modules are imported.
+        env.load()
+
         from .server import create_app
 
         app = create_app(args.source)

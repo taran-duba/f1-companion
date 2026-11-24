@@ -22,7 +22,7 @@ interface Props {
 type GapMode = "interval" | "leader";
 
 /**
- * Columns hide progressively (DESIGN_SYSTEM data-density rule 3), driven by
+ * Columns hide progressively (docs/DESIGN_SYSTEM.md data-density rule 3), driven by
  * the tower's own width (container queries), not the viewport: the tower
  * shares the screen with other panels, so viewport breakpoints lie.
  * always: pos, driver, main gap (interval or leader, your pick), main time, tyre (fits 328px)
