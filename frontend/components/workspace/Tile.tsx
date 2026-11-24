@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { WIDGETS, type DriverRef, type Tile as TileData } from "@/lib/workspace";
 
 export interface DriverOption {
@@ -29,7 +29,7 @@ interface Props {
 }
 
 const ICON_BTN =
-  "grid size-8 shrink-0 place-items-center rounded-chip text-muted transition-colors duration-150 hover:bg-raised hover:text-text disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-muted";
+  "grid size-11 shrink-0 lg:size-8 place-items-center rounded-chip text-muted transition-colors duration-150 hover:bg-raised hover:text-text disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-muted";
 
 function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
@@ -42,10 +42,29 @@ function IconBtn({ label, onClick, disabled, children }: { label: string; onClic
 }
 
 /** One widget's frame: title, driver picker, and (in edit mode) move, resize and remove. */
+/** True while the element's content is taller or wider than its box, i.e. it scrolls. */
+function useOverflows(ref: React.RefObject<HTMLElement | null>) {
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    return () => ro.disconnect();
+  }, [ref]);
+  return overflows;
+}
+
 export function Tile({ tile, index, count, edit, focused, code, followedCode, drivers, onDriver, onResize, onMove, onRemove, onFocus, onDropTile, children }: Props) {
   const info = WIDGETS[tile.type];
   const [over, setOver] = useState(false);
   const flush = tile.type === "tower";
+  const body = useRef<HTMLDivElement>(null);
+  // A scrolling area is only reachable by keyboard if it can take focus.
+  const scrolls = useOverflows(body);
 
   return (
     <section
@@ -91,7 +110,7 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
             <select
               value={tile.driver}
               onChange={(e) => onDriver(e.target.value as DriverRef)}
-              className="h-7 max-w-[10.5rem] cursor-pointer appearance-none truncate rounded-chip border border-transparent bg-transparent py-0 pl-2 pr-6 text-small font-semibold text-text transition-colors duration-200 hover:border-line-control hover:bg-raised"
+              className="h-11 max-w-[10.5rem] lg:h-7 cursor-pointer appearance-none truncate rounded-chip border border-transparent bg-transparent py-0 pl-2 pr-6 text-small font-semibold text-text transition-colors duration-200 hover:border-line-control hover:bg-raised"
             >
               <optgroup label="Relative">
                 <option value="follow">{followedCode ? `Followed (${followedCode})` : "Followed driver"}</option>
@@ -155,7 +174,13 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
           )}
         </div>
       </header>
-      <div className={`min-h-0 flex-1 overflow-auto ${flush ? "px-2 pb-2" : "px-4 pb-4"} ${flush ? "" : "max-h-[34rem] lg:max-h-none"}`}>{children}</div>
+      <div
+        ref={body}
+        {...(scrolls ? { tabIndex: 0, role: "region", "aria-label": `${info.title} contents` } : {})}
+        className={`min-h-0 flex-1 overflow-auto ${flush ? "px-2 pb-2" : "px-4 pb-4"} ${flush ? "" : "max-h-[34rem] lg:max-h-none"}`}
+      >
+        {children}
+      </div>
     </section>
   );
 }

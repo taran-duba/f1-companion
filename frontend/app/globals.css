@@ -48,8 +48,8 @@
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-fira-code), ui-monospace, monospace;
 
-  --text-micro: 0.75rem;
-  --text-micro--line-height: 1rem;
+  --text-micro: 0.8125rem;
+  --text-micro--line-height: 1.125rem;
   --text-small: 0.875rem;
   --text-small--line-height: 1.25rem;
   --text-body: 1rem;
@@ -198,14 +198,14 @@
    share whatever height the top bar, session strip and dock leave, and tiles scroll inside
    themselves. Shorter windows and the other pages keep the normal scrolling page. */
 @media (width >= 64rem) and (height >= 40rem) {
-  body:has(.ws-fit) {
+  body[data-ws-fit] {
     overflow: hidden;
   }
-  body:has(.ws-fit) :is(.app-shell, .app-inner) {
+  body[data-ws-fit] :is(.app-shell, .app-inner) {
     height: 100dvh;
     min-height: 0;
   }
-  body:has(.ws-fit) .app-main {
+  body[data-ws-fit] .app-main {
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -245,11 +245,21 @@ html:not([data-booted="true"]) .boot-dock {
   animation: tile-in 700ms var(--ease-out-quick) 1700ms both;
 }
 
+/* Reduced motion removes movement, not information: nothing slides, scales or loops, but
+   colour and opacity changes still show that something changed (a value flash, a state fade). */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    transition-property: color, background-color, border-color, outline-color, opacity !important;
+    transition-duration: 150ms !important;
+  }
+  .animate-pulse-dot,
+  .animate-flag-in {
+    animation: none;
+  }
+  .animate-panel-in,
+  .animate-tile-in,
+  html:not([data-booted="true"]) :is(.boot-bar, .boot-strip, .boot-dock, .workspace > .tile) {
+    animation: fade-in 200ms ease-out both;
   }
 }

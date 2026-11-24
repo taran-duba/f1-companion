@@ -51,6 +51,17 @@ export function Workspace() {
   const rows = useMemo(() => (state ? towerRows(state) : []), [state]);
   const drivers = useMemo(() => rows.map((r) => ({ num: r.num, code: r.code, name: r.name })), [rows]);
 
+  // Fit mode's page-level rules key off this attribute, not :has(.ws-fit): Next keeps the previous
+  // route mounted but hidden, so the class would still match on /driver and /settings and lock their scroll.
+  const mounted = !!state;
+  useEffect(() => {
+    if (!mounted) return;
+    document.body.dataset.wsFit = "";
+    return () => {
+      delete document.body.dataset.wsFit;
+    };
+  }, [mounted]);
+
   // Default selection: your first favourite in the session, else the leader, once timing arrives.
   useEffect(() => {
     if (!state || selected) return;

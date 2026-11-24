@@ -16,6 +16,10 @@ import { useBoxSize } from "./useBoxSize";
 /** Tallest the map gets; width follows the circuit's aspect ratio. */
 const MAX_HEIGHT = 420;
 
+/** Until the lap closes, a partial trace this stretched is a line of cars on the grid, not a circuit. */
+const MIN_TRACE_ASPECT = 0.4;
+const MAX_TRACE_ASPECT = 2.5;
+
 export function TrackMap({ state, selected }: { state: TimingState; selected: string | null }) {
   const { status, generation } = useStream();
   const { select } = useSelection();
@@ -51,6 +55,15 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
       <EmptyState>
         Track map appears once cars have done a lap. The circuit is traced from car positions, so keep the session
         running (in a replay, press play or seek forward).
+      </EmptyState>
+    );
+  }
+
+  if (!closed && (view.aspect > MAX_TRACE_ASPECT || view.aspect < MIN_TRACE_ASPECT)) {
+    return (
+      <EmptyState>
+        Tracing the circuit from car positions. The map appears once the cars have covered enough of the lap (in a
+        replay, press play or seek forward).
       </EmptyState>
     );
   }
