@@ -1,6 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { carDescription, carLabel, carMarkers, fitView, mapSummary, mapView, outlinePath, placeLabels, toView } from "@/lib/trackmap";
-import type { TimingState } from "@/lib/types";
+import { carDescription, carLabel, carMarkers, fitView, mapSummary, mapView, outlinePath, placeLabels, sectorMarks, toView } from "@/lib/trackmap";
+import type { TimingState, TrackMap } from "@/lib/types";
+
+describe("sectorMarks", () => {
+  // A circle of 60 points, run anticlockwise in feed coordinates.
+  const points = Array.from({ length: 60 }, (_, i) => {
+    const a = (2 * Math.PI * i) / 60;
+    return [Math.round(5000 * Math.cos(a)), Math.round(5000 * Math.sin(a))] as [number, number];
+  });
+  const tm = (markers?: TrackMap["markers"], closed = true): TrackMap => ({ points, bounds: [-5000, -5000, 5000, 5000], closed, markers });
+  const view = fitView([-5000, -5000, 5000, 5000]);
+
+  it("splits the lap into three sectors from the finish line, wrapping past the end", () => {
+    const { sectors, lines } = sectorMarks(view, tm({ finish: 50, s1: 10, s2: 30 }));
+    expect(sectors.map((s) => s.n)).toEqual([1, 2, 3]);
+    // S1 runs 50 → 59 → 0 → 10: 21 points.
+    expect(sectors[0].d.split(/[ML]/).filter(Boolean)).toHaveLength(21);
+    expect(lines.map((l) => l.key)).toEqual(["finish", "s1", "s2"]);
+  });
+
+  it("puts labels outside the circuit", () => {
+    const { lines, sectors } = sectorMarks(view, tm({ finish: 0, s1: 20, s2: 40 }));
+    const fromCentre = (left: number, top: number) => Math.hypot(left - 50, top - 50);
+    for (const m of [...lines, ...sectors]) expect(fromCentre(m.left, m.top)).toBeGreaterThan(45);
+  });
+
+  it("shows the finish line alone, and nothing on an open trace or without markers", () => {
+    expect(sectorMarks(view, tm({ finish: 3 }))).toMatchObject({ sectors: [], lines: [{ key: "finish" }] });
+    expect(sectorMarks(view, tm({ finish: 3, s1: 20, s2: 40 }, false))).toEqual({ sectors: [], lines: [] });
+    expect(sectorMarks(view, tm(undefined))).toEqual({ sectors: [], lines: [] });
+    expect(sectorMarks(view, tm({ finish: 999 }))).toEqual({ sectors: [], lines: [] });
+  });
+});
 
 function state(partial: Partial<TimingState> = {}): TimingState {
   return {

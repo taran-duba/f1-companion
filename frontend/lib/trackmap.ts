@@ -1,7 +1,7 @@
 /** Pure helpers for the track map: fit the circuit to a box and place cars on it. No React. */
 
 import { teamColour } from "./timing";
-import type { TimingState } from "./types";
+import type { TimingState, TrackMap } from "./types";
 
 /** Bounds as [minX, minY, maxX, maxY] in feed units (decimetres). */
 export type Bounds = [number, number, number, number];
@@ -99,6 +99,92 @@ export function outlinePath(view: MapView, points: readonly (readonly [number, n
   });
   if (closed && points.length > 2) parts.push("Z");
   return parts.join("");
+}
+
+export interface SectorArc {
+  n: 1 | 2 | 3;
+  /** SVG path in view coordinates. */
+  d: string;
+  /** Label position, percent of the map box. */
+  left: number;
+  top: number;
+}
+
+export interface TimingLineMark {
+  key: "finish" | "s1" | "s2";
+  /** Tick across the track, in view coordinates. */
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  left: number;
+  top: number;
+}
+
+/**
+ * Sectors and timing lines for a closed circuit. The outline runs in the direction of travel
+ * (it is one car's lap), so S1 runs from the finish line to the S1 line, and so on. Labels sit
+ * just outside the circuit. Sectors need all three lines; the finish line alone still shows.
+ */
+export function sectorMarks(view: MapView, tm: TrackMap | undefined): { sectors: SectorArc[]; lines: TimingLineMark[] } {
+  const none = { sectors: [], lines: [] };
+  const pts = tm?.points ?? [];
+  const mk = tm?.markers;
+  if (!tm?.closed || pts.length < 10 || !mk) return none;
+  const n = pts.length;
+  const v = pts.map(([x, y]) => toView(view, x, y));
+  const cx = v.reduce((s, p) => s + p[0], 0) / n;
+  const cy = v.reduce((s, p) => s + p[1], 0) / n;
+  const tick = 0.028 * Math.max(view.width, view.height);
+  const pct = (x: number, y: number) => ({ left: clampPct((x / view.width) * 100), top: clampPct((y / view.height) * 100) });
+  const valid = (i: number | undefined): i is number => Number.isInteger(i) && (i as number) >= 0 && (i as number) < n;
+
+  /** Unit normal at point i, pointing away from the middle of the circuit. */
+  const outward = (i: number): [number, number] => {
+    const a = v[(i - 2 + n) % n];
+    const b = v[(i + 2) % n];
+    let nx = -(b[1] - a[1]);
+    let ny = b[0] - a[0];
+    const len = Math.hypot(nx, ny) || 1;
+    nx /= len;
+    ny /= len;
+    if ((v[i][0] - cx) * nx + (v[i][1] - cy) * ny < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    return [nx, ny];
+  };
+
+  const lines: TimingLineMark[] = [];
+  for (const key of ["finish", "s1", "s2"] as const) {
+    const i = mk[key];
+    if (!valid(i)) continue;
+    const [nx, ny] = outward(i);
+    const [x, y] = v[i];
+    lines.push({ key, x1: x - nx * tick, y1: y - ny * tick, x2: x + nx * tick, y2: y + ny * tick, ...pct(x + nx * tick * 2.4, y + ny * tick * 2.4) });
+  }
+
+  const sectors: SectorArc[] = [];
+  const { finish, s1, s2 } = mk;
+  if (valid(finish) && valid(s1) && valid(s2)) {
+    const bounds: [1 | 2 | 3, number, number][] = [
+      [1, finish, s1],
+      [2, s1, s2],
+      [3, s2, finish],
+    ];
+    for (const [num, from, to] of bounds) {
+      const idx: number[] = [];
+      for (let i = from; ; i = (i + 1) % n) {
+        idx.push(i);
+        if (i === to || idx.length > n) break;
+      }
+      const d = idx.map((i, k) => `${k ? "L" : "M"}${Math.round(v[i][0])} ${Math.round(v[i][1])}`).join("");
+      const mid = idx[Math.floor(idx.length / 2)];
+      const [nx, ny] = outward(mid);
+      sectors.push({ n: num, d, ...pct(v[mid][0] + nx * tick * 1.9, v[mid][1] + ny * tick * 1.9) });
+    }
+  }
+  return { sectors, lines };
 }
 
 function clampPct(v: number): number {

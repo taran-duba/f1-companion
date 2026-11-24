@@ -114,6 +114,9 @@ class StateStore:
             d = self.derived.on_timing(data, self.topics, utc)
             if d and not msg.snapshot:
                 self._mark("Derived", d)
+            if self.derived.markers_changed:
+                self.derived.markers_changed = False
+                self._mark("Derived", {"TrackMap": self.derived.track_map()}, replace_key="TrackMap")
 
     def _feed_flag(self, key: str, value: bool) -> None:
         if self.feed.get(key) != value:

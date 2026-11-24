@@ -20,6 +20,13 @@ from .messages import parse_iso
 TELEMETRY_WINDOW_S = 120.0
 TRACE_MAX_POINTS = 400
 OUTLINE_MAX_POINTS = 600
+# Timing lines on the map (start/finish, end of S1, end of S2): each crossing gives a sample,
+# the marker is the median of the latest ones once there are enough.
+MARKER_KEYS = ("finish", "s1", "s2")
+MARKER_SAMPLES = 31
+MARKER_MIN_SAMPLES = 3
+MARKER_SNAP = 1000.0  # a marker further than 100 m from the outline isn't shown
+POSITION_HISTORY = 60  # per car, about 15 s at the feed's ~4 Hz
 
 _LAP_RE = re.compile(r"^(?:(\d+):)?(\d+(?:\.\d+)?)$")
 _LAPPED_RE = re.compile(r"^\+?\s*(\d+)\s*L(?:AP)?S?$", re.IGNORECASE)
@@ -120,6 +127,10 @@ class Derived:
         self._outline_pending_points = 0
         self.telemetry_seen = False
         self.position_seen = False
+        # Recent (utc, x, y) per car, to place timing events on the circuit.
+        self._pos_hist: dict[str, deque] = {}
+        self._marks: dict[str, list[tuple[float, float]]] = {k: [] for k in MARKER_KEYS}
+        self.markers_changed = False
 
     # -- helpers -----------------------------------------------------------
     def _drv(self, num: str) -> _DriverTrack:
@@ -141,7 +152,51 @@ class Derived:
             return {"points": [], "bounds": None, "closed": False}
         xs = [p[0] for p in pts]
         ys = [p[1] for p in pts]
-        return {"points": pts, "bounds": [min(xs), min(ys), max(xs), max(ys)], "closed": self.outline_closed}
+        return {"points": pts, "bounds": [min(xs), min(ys), max(xs), max(ys)], "closed": self.outline_closed,
+                "markers": self._snapped_markers(pts)}
+
+    # -- timing lines on the map -------------------------------------------
+    def _where(self, num: str, utc: float | None) -> tuple[float, float] | None:
+        """Where a car was at ``utc``, interpolated from its recent positions."""
+        hist = self._pos_hist.get(num)
+        if utc is None or not hist or utc < hist[0][0] or utc > hist[-1][0] + 1.0:
+            return None
+        prev = hist[0]
+        for cur in hist:
+            if cur[0] >= utc:
+                span = cur[0] - prev[0]
+                f = (utc - prev[0]) / span if span > 0 else 1.0
+                return prev[1] + (cur[1] - prev[1]) * f, prev[2] + (cur[2] - prev[2]) * f
+            prev = cur
+        return hist[-1][1], hist[-1][2]
+
+    def _mark_crossing(self, key: str, num: str, utc: float | None) -> None:
+        at = self._where(num, utc)
+        if at is None:
+            return
+        marks = self._marks[key]
+        marks.append(at)
+        del marks[:-MARKER_SAMPLES]
+        # Re-publish while the estimate settles, then every tenth crossing.
+        if len(marks) <= 10 or len(marks) % 10 == 0:
+            self.markers_changed = True
+
+    def _snapped_markers(self, pts: list) -> dict[str, int]:
+        """Each timing line as an index into ``pts`` (the published outline)."""
+        out: dict[str, int] = {}
+        for key, marks in self._marks.items():
+            if len(marks) < MARKER_MIN_SAMPLES or not pts:
+                continue
+            mx = sorted(m[0] for m in marks)[len(marks) // 2]
+            my = sorted(m[1] for m in marks)[len(marks) // 2]
+            best, best_d = None, MARKER_SNAP
+            for i, (px, py) in enumerate(pts):
+                dd = math.hypot(px - mx, py - my)
+                if dd < best_d:
+                    best, best_d = i, dd
+            if best is not None:
+                out[key] = best
+        return out
 
     # -- timing ------------------------------------------------------------
     def on_timing(self, update: dict, state: dict, utc: float | None) -> dict | None:
@@ -180,6 +235,11 @@ class Derived:
                         hist[-1]["s3"] = ms
                         delta.setdefault(num, {})[str(len(hist) - 1)] = {"s3": ms}
                     else:
+                        # A new S1 or S2 time: the car just crossed that timing line (not in
+                        # the pit lane, which has its own lines).
+                        pitting = d.lap_had_pit or d.lap_pit_out or line.get("InPit") or line.get("PitOut")
+                        if i < 2 and d.sectors[i] != ms and not pitting:
+                            self._mark_crossing(f"s{i + 1}", num, utc)
                         d.sectors[i] = ms
             n_laps = upd.get("NumberOfLaps")
             if isinstance(n_laps, int) and n_laps > d.laps_done:
@@ -189,6 +249,9 @@ class Derived:
                     d.sectors = [None, None, None]
                     continue
                 d.laps_done = n_laps
+                # Crossed the line on track (a pit-in lap ends at the pit lane's line).
+                if not d.lap_had_pit and not line.get("InPit"):
+                    self._mark_crossing("finish", num, utc)
                 lap = self._close_lap(num, d, line, app_lines.get(num) or {}, n_laps, utc)
                 hist = self.lap_history.setdefault(num, [])
                 hist.append(lap)
@@ -320,6 +383,8 @@ class Derived:
             if not isinstance(entries, dict):
                 continue
             latest_ts = item.get("Timestamp") or latest_ts
+            ts_dt = parse_iso(item["Timestamp"]) if isinstance(item.get("Timestamp"), str) else None
+            ts = ts_dt.timestamp() if ts_dt else None
             for num, e in entries.items():
                 if not isinstance(e, dict):
                     continue
@@ -327,6 +392,11 @@ class Derived:
                 if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
                     continue
                 latest[num] = {"X": x, "Y": y, "Z": e.get("Z", 0), "Status": e.get("Status", "")}
+                if ts is not None and not (x == 0 and y == 0):
+                    hist = self._pos_hist.setdefault(num, deque(maxlen=POSITION_HISTORY))
+                    if hist and ts < hist[-1][0]:
+                        hist.clear()  # time went backwards: a seek
+                    hist.append((ts, float(x), float(y)))
                 if not self.outline_closed:
                     changed |= self._trace_outline(num, float(x), float(y), timing_lines.get(num) or {}, e)
         if not latest:

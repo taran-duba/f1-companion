@@ -117,6 +117,8 @@ export interface TrackMap {
   points: [number, number][];
   bounds: [number, number, number, number] | null;
   closed: boolean;
+  /** Timing lines as indexes into `points`, estimated from where cars were when they crossed. */
+  markers?: { finish?: number; s1?: number; s2?: number };
 }
 
 export interface FeedInfo {

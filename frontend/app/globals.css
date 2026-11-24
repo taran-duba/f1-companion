@@ -119,6 +119,12 @@
     --art-1: 239, 101, 101;
     --art-2: 130, 8, 7;
     --art-comet: 240, 135, 132;
+    /* Track map sectors: fixed in every theme, and clear of the timing colours (no yellow, no
+       purple, no green) so a sector of the map never reads as a sector time. Not named
+       --color-*: Tailwind drops variables in its theme namespace that no utility class uses. */
+    --map-s1: #e5484d;
+    --map-s2: #3e8bff;
+    --map-s3: #14b8a6;
   }
   html {
     background: var(--color-bg);

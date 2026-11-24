@@ -5,7 +5,8 @@ import { OpenSources } from "../sources/OpenSources";
 import { useFit } from "@/lib/fit";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
-import { carLabel, carMarkers, mapSummary, mapView, outlinePath, placeLabels } from "@/lib/trackmap";
+import { sessionKind } from "@/lib/timing";
+import { carLabel, carMarkers, mapSummary, mapView, outlinePath, placeLabels, sectorMarks } from "@/lib/trackmap";
 import type { TimingState } from "@/lib/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { EmptyState } from "../Panel";
@@ -37,6 +38,9 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
   // ≤ 600 points (backend downsamples), so rebuilding the path per update is cheap.
   const path = view && points?.length ? outlinePath(view, points, closed) : "";
   const cars = view ? carMarkers(state, view) : [];
+  const marks = view ? sectorMarks(view, trackMap) : { sectors: [], lines: [] };
+  // Away from a race the line is only where laps are timed.
+  const qualifying = sessionKind(state) !== "race";
 
   const live = status?.source.kind === "live";
   const noPositionFeed = state.Feed ? !state.Feed.position : !state.Position;
@@ -136,6 +140,19 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
                 // With non-scaling-stroke, browsers apply the dash pattern in screen pixels.
                 strokeDasharray={closed ? undefined : "12 8"}
               />
+              {/* Sectors: the track in three colours, finish line to S1 line to S2 line. */}
+              {marks.sectors.map((s) => (
+                <path
+                  key={s.n}
+                  d={s.d}
+                  fill="none"
+                  style={{ stroke: `color-mix(in srgb, var(--map-s${s.n}) 72%, var(--color-line-strong))` }}
+                  strokeWidth={8}
+                  strokeLinejoin="round"
+                  strokeLinecap="butt"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
               {closed && (
                 <path
                   d={path}
@@ -147,9 +164,44 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
                   vectorEffect="non-scaling-stroke"
                 />
               )}
+              {marks.lines.map((l) =>
+                l.key === "finish" ? (
+                  // Chequered: white under a dark dash.
+                  <g key={l.key}>
+                    <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#ffffff" strokeWidth={6} vectorEffect="non-scaling-stroke" />
+                    <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#0b0c0e" strokeWidth={6} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+                  </g>
+                ) : (
+                  <line key={l.key} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="var(--color-text)" strokeWidth={2.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                ),
+              )}
             </>
           )}
         </svg>
+        {/* Timing line and sector labels, under the car labels. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5]">
+          {marks.sectors.map((s) => (
+            <span
+              key={s.n}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-chip px-1.5 text-micro font-bold leading-5 text-ink"
+              style={{ left: `${s.left}%`, top: `${s.top}%`, background: `var(--map-s${s.n})` }}
+            >
+              S{s.n}
+            </span>
+          ))}
+          {marks.lines
+            .filter((l) => l.key === "finish")
+            .map((l) => (
+              <span
+                key={l.key}
+                className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-chip border border-line-strong bg-surface px-1.5 text-micro font-bold leading-5 text-text"
+                style={{ left: `${l.left}%`, top: `${l.top}%` }}
+              >
+                <svg aria-hidden="true" width="9" height="9" viewBox="0 0 2 2" className="mr-1 inline-block align-[-1px]"><rect width="2" height="2" fill="currentColor" /><rect width="1" height="1" fill="var(--color-surface)" /><rect x="1" y="1" width="1" height="1" fill="var(--color-surface)" /></svg>
+                {qualifying ? "Timing line" : "Start / finish"}
+              </span>
+            ))}
+        </div>
         <ul
           key={generation}
           aria-label="Cars on track, in race order" className="absolute inset-0 m-0 list-none p-0"
@@ -176,7 +228,16 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
       </div>
 
       <figcaption className="flex flex-col gap-2">
-        <span className="num text-small text-faint">{summary}</span>
+        <span className="num text-small text-faint">
+          {summary}
+          {marks.lines.length > 0 && (
+            <span className="sr-only">
+              {" "}
+              {marks.sectors.length ? "Sectors 1, 2 and 3 and the " : "The "}
+              {qualifying ? "timing line" : "start/finish line"} {marks.sectors.length ? "are" : "is"} marked.
+            </span>
+          )}
+        </span>
         <MapLegend />
       </figcaption>
     </figure>
