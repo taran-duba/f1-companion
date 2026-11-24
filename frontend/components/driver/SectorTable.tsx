@@ -2,9 +2,13 @@
 
 import { Chip, Diamond, MarkedTime, TyreBadge } from "@/components/timing/Atoms";
 import { EmptyState } from "@/components/Panel";
+import { useFitHeight } from "@/lib/fit";
 import { formatMs } from "@/lib/timing";
 import type { LapRecord } from "@/lib/types";
 import { bestsOf, lapTyre, markFor, type Bests, type StintView, type TimeKey } from "./model";
+
+/** Height of one lap row, for how many fit a workspace tile. */
+const ROW_PX = 38;
 
 /**
  * Lap-by-lap sector times, newest first. ▲ green = this driver's best in the
@@ -22,11 +26,14 @@ export function SectorTable({
   stints?: StintView[];
   maxHeight?: string;
 }) {
+  const [fitRef, avail] = useFitHeight();
   if (!laps.length) {
     return <EmptyState>No laps completed yet. Sector times appear here as each lap is finished.</EmptyState>;
   }
   const personal = bestsOf(laps);
-  const rows = [...laps].sort((a, b) => b.lap - a.lap);
+  const sorted = [...laps].sort((a, b) => b.lap - a.lap);
+  // Fit mode (workspace tile): show as many of the newest laps as the tile holds, not a scroll box.
+  const rows = avail != null ? sorted.slice(0, Math.max(3, Math.floor((avail - 4) / ROW_PX))) : sorted;
   const cell = (lap: LapRecord, key: TimeKey) => {
     const v = lap[key];
     const value = v != null && v > 0 ? formatMs(v, { sector: key !== "ms" }) : "";
@@ -34,7 +41,7 @@ export function SectorTable({
   };
 
   return (
-    <div>
+    <div ref={fitRef} className={avail != null ? "h-full overflow-hidden" : ""}>
       <div
         role="region"
         aria-label="Sector times by lap, newest first"
@@ -45,12 +52,12 @@ export function SectorTable({
         // marked time needs) and tucks up under the panel's title rule, so there is no
         // second rule above the header. overflow-x is a fallback for an unusually long
         // sector (red flag, 1:0x.xxx), so a time is never clipped.
-        className="relative -mx-3 -mt-3 overflow-auto border-b border-line md:mx-0 md:mt-0 md:rounded-chip md:border"
-        style={{ maxHeight }}
+        className={`relative -mx-3 -mt-3 ${avail != null ? "overflow-hidden" : "overflow-auto"} border-b border-line md:mx-0 md:mt-0 md:rounded-chip md:border`}
+        style={avail != null ? undefined : { maxHeight }}
       >
         <table className="w-full border-separate border-spacing-0 text-small md:text-body">
           <caption className="sr-only">Sector and lap times for each lap, newest lap first</caption>
-          <thead className="sticky top-0 z-10 bg-surface">
+          <thead data-fit-reserve className="sticky top-0 z-10 bg-surface">
             <tr className="text-small font-semibold text-muted">
               <Th align="left" className="pl-3 md:pl-2">Lap</Th>
               <Th>S1</Th>
@@ -58,7 +65,7 @@ export function SectorTable({
               <Th>S3</Th>
               <Th>Time</Th>
               <Th align="left" className="pl-1.5 pr-3 md:pl-3 md:pr-1">Tyre</Th>
-              <Th className="hidden pr-2 md:table-cell">Pos</Th>
+              <Th className={`hidden pr-2 ${avail != null ? "" : "md:table-cell"}`}>Pos</Th>
             </tr>
           </thead>
           <tbody className="[&>tr+tr>*]:border-t [&>tr>*]:border-line">
@@ -92,14 +99,14 @@ export function SectorTable({
                       )}
                     </span>
                   </td>
-                  <td className="num hidden pr-2 text-right md:table-cell">{lap.pos ?? <span className="text-faint">—</span>}</td>
+                  <td className={`num hidden pr-2 text-right ${avail != null ? "" : "md:table-cell"}`}>{lap.pos ?? <span className="text-faint">—</span>}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-normal text-muted">
+      <p data-fit-reserve className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-normal text-muted">
         <span>
           <span aria-hidden="true" className="text-sector-purple">
             <Diamond />
@@ -112,6 +119,7 @@ export function SectorTable({
           </span>{" "}
           Personal best
         </span>
+        {rows.length < sorted.length && <span className="num ml-auto">Latest {rows.length} of {sorted.length} laps</span>}
       </p>
     </div>
   );

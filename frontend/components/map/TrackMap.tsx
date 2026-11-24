@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { OpenSources } from "../sources/OpenSources";
+import { useFit } from "@/lib/fit";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
 import { carLabel, carMarkers, mapSummary, mapView, outlinePath, placeLabels } from "@/lib/trackmap";
@@ -23,6 +24,7 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
   const [codesChoice, setCodesChoice] = useState<boolean | null>(null);
   const showCodes = codesChoice ?? wide;
   const [boxRef, box] = useBoxSize<HTMLDivElement>();
+  const fit = useFit();
 
   const trackMap = state.Derived?.TrackMap;
   const points = trackMap?.points;
@@ -68,7 +70,7 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
   const sides = placeLabels(labels, box.width, box.height);
 
   return (
-    <figure className="m-0 flex flex-col gap-3">
+    <figure className={`m-0 flex flex-col gap-3 ${fit ? "h-full" : ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-small text-muted" aria-live="polite">
           {closed ? "Circuit traced from car positions" : "Tracing circuit from car positions"}
@@ -91,10 +93,16 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
         </button>
       </div>
 
+      {/* Fit mode: the circuit takes the height the tile has left, at its own aspect ratio. */}
+      <div className={fit ? "min-h-0 flex-1" : ""} style={fit ? { containerType: "size" } : undefined}>
       <div
         ref={boxRef}
         className="relative isolate mx-auto w-full"
-        style={{ aspectRatio: String(view.aspect), maxWidth: `min(100%, ${Math.round(MAX_HEIGHT * view.aspect)}px)` }}
+        style={
+          fit
+            ? { aspectRatio: String(view.aspect), width: `min(100cqw, ${(view.aspect * 100).toFixed(2)}cqh)` }
+            : { aspectRatio: String(view.aspect), maxWidth: `min(100%, ${Math.round(MAX_HEIGHT * view.aspect)}px)` }
+        }
       >
         <svg
           viewBox={`0 0 ${view.width} ${view.height}`}
@@ -151,6 +159,7 @@ export function TrackMap({ state, selected }: { state: TimingState; selected: st
             ) : null;
           })}
         </div>
+      </div>
       </div>
 
       <figcaption className="flex flex-col gap-2">

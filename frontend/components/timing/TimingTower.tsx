@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useFitHeight } from "@/lib/fit";
 import { useStream } from "@/lib/store";
 import { formatGap, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
@@ -48,6 +49,7 @@ const COL = {
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {
   const { generation } = useStream();
+  const [fitRef, avail] = useFitHeight();
   const rows = useMemo(() => towerRows(state), [state]);
   const moves = usePositionMoves(rows, generation);
   const table = useRef<HTMLTableElement>(null);
@@ -85,14 +87,16 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   }
 
   const c = (cls: string) => (compact ? "hidden" : cls);
+  // In fit mode the rows share the tile's height (20 cars on one screen), never scrolling.
+  const rowH = avail != null && rows.length ? Math.max(16, Math.min(36, Math.floor((avail - 2) / rows.length))) : null;
   return (
-    <div className="@container overflow-x-auto">
+    <div ref={fitRef} className={`@container ${avail != null ? "h-full overflow-hidden" : "overflow-x-auto"}`}>
       <table ref={table} className="w-full border-collapse text-[0.9375rem] @max-[340px]:text-[0.875rem] @min-[400px]:text-body lg:text-row" onKeyDown={onKeyDown}>
         <caption className="sr-only">
           Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry; up and down arrows move between
           drivers.
         </caption>
-        <thead>
+        <thead data-fit-reserve>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
             <th scope="col" className="w-9 py-1 pr-1.5 text-right lg:w-10 lg:pr-2">
               Pos
@@ -131,7 +135,7 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className={rowH != null ? "[&_*]:!leading-none" : ""}>
           {rows.map((r) => (
             <Row
               key={r.num}
@@ -141,11 +145,12 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
               move={moves[r.num] ?? 0}
               onSelect={onSelect}
               compact={compact}
+              rowH={rowH}
             />
           ))}
         </tbody>
       </table>
-      <Legend compact={compact} />
+      <Legend compact={compact} fit={avail != null} />
     </div>
   );
 }
@@ -157,6 +162,7 @@ const Row = memo(function Row({
   move,
   onSelect,
   compact,
+  rowH,
 }: {
   row: TowerRow;
   selected: boolean;
@@ -164,20 +170,23 @@ const Row = memo(function Row({
   move: number;
   onSelect: (num: string) => void;
   compact: boolean;
+  rowH: number | null;
 }) {
+  const dense = rowH != null && rowH < 28;
   const c = (cls: string) => (compact ? "hidden" : cls);
   const out = r.retired || r.stopped;
   const chip = out ? (r.retired ? "DNF" : "STOP") : r.inPit ? "PIT" : r.pitOut ? "OUT" : null;
   return (
     <tr
       data-row={r.num}
+      style={rowH != null ? { height: rowH } : undefined}
       onClick={() => onSelect(r.num)}
       className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-8 ${
         // Hover is lighter than selection so pointing at a row never reads as selecting it.
         selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : "hover:bg-raised/50"
       } ${out ? "text-muted" : ""}`}
     >
-      <td className="num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 text-title leading-none font-bold">
+      <td className={`num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 leading-none font-bold ${dense ? "text-body" : "text-title"}`}>
         <span className="inline-flex items-baseline justify-end gap-0.5">
           <PositionMove move={move} />
           {out ? <span className="text-small text-muted">—</span> : r.position}
@@ -196,9 +205,9 @@ const Row = memo(function Row({
           tabIndex={focusable ? 0 : -1}
           // Name starts with the visible text (code + chip) so voice control can target it.
           aria-label={`${r.code}${chip ? ` ${chip}` : ""}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
-          className="flex min-h-11 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 lg:min-h-8"
+          className={`flex items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 ${rowH != null ? "h-full min-h-0" : "min-h-11 lg:min-h-8"}`}
         >
-          <TeamBar colour={r.teamColour} />
+          <TeamBar colour={r.teamColour} className={dense ? "!h-4" : undefined} />
           <span className="font-semibold tracking-wide">{r.code}</span>
           {/* One status chip, most important first, so the driver column stays narrow. */}
           {chip && (
@@ -243,7 +252,7 @@ const Row = memo(function Row({
       ))}
       <td className="pr-2 @min-[560px]:pl-2">
         <span className="flex items-center gap-1.5">
-          <TyreBadge compound={r.compound} />
+          <TyreBadge compound={r.compound} size={dense ? 16 : 24} />
           <span className={`num text-small text-muted ${compact ? "" : COL.age}`}>
             {r.tyreAge ?? "—"}
             <span className="sr-only"> laps old</span>
@@ -391,9 +400,9 @@ function usePositionMoves(rows: TowerRow[], generation: number): Record<string, 
   return useMemo(() => Object.fromEntries(Object.entries(moves).map(([k, v]) => [k, v.d])), [moves]);
 }
 
-function Legend({ compact }: { compact: boolean }) {
+function Legend({ compact, fit }: { compact: boolean; fit: boolean }) {
   return (
-    <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-muted">
+    <p data-fit-reserve className={`mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-muted ${fit ? "!mt-1 !flex-nowrap overflow-hidden whitespace-nowrap !text-micro" : ""}`}>
       <span>
         <span className="text-sector-purple">
           <Diamond /> purple
@@ -407,7 +416,7 @@ function Legend({ compact }: { compact: boolean }) {
       <span className={compact ? "hidden" : "hidden @min-[790px]:inline"}>
         <span className="text-sector-yellow">yellow</span> slower sector
       </span>
-      <span>
+      <span className={fit ? "hidden" : undefined}>
         <span className="text-warn">⇢</span> within 1 s of car ahead
       </span>
       <Link href="/driver" className="-my-3 ml-auto inline-flex min-h-11 items-center underline underline-offset-4 hover:text-text lg:my-0 lg:min-h-0">

@@ -17,7 +17,7 @@ function anchorStyle(car: CarMarker): React.CSSProperties {
 
 /** Dot diameter in px; also used for label spacing. */
 export function dotSize(selected: boolean): number {
-  return selected ? 18 : 12;
+  return selected ? 20 : 12;
 }
 
 /** One car on the map: a real button (44px tap area on phone) with its team-colour dot. */
@@ -43,9 +43,13 @@ export const CarDot = memo(function CarDot({
         onClick={() => onSelect(car.num)}
         className="absolute left-0 top-0 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full lg:size-8"
       >
+        {selected && (
+          // The followed driver pulses softly, so it can be found among 20 dots at a glance.
+          <span aria-hidden="true" className="absolute size-9 animate-ping rounded-full bg-accent/25 [animation-duration:2.4s] motion-reduce:hidden" />
+        )}
         <span
           aria-hidden="true"
-          className="block rounded-full"
+          className="relative block rounded-full"
           style={{
             width: size,
             height: size,
@@ -80,8 +84,8 @@ export const CarLabel = memo(function CarLabel({
   return (
     <div className={ANCHOR} style={anchorStyle(car)}>
       <span
-        className={`num absolute whitespace-nowrap rounded-chip bg-bg/85 px-1 text-micro font-semibold ${
-          selected ? "text-text" : hollow ? "text-faint" : "text-muted"
+        className={`num absolute whitespace-nowrap rounded-chip px-1 text-micro font-semibold ${
+          selected ? "bg-accent text-bg" : hollow ? "bg-bg/85 text-faint" : "bg-bg/85 text-muted"
         }`}
         style={labelStyle(side, dotSize(selected) / 2 + 3)}
       >

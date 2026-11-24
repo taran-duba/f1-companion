@@ -29,10 +29,12 @@ interface Props {
   /** Followed driver: what tower clicks change. */
   onSelect: (num: string) => void;
   selected: string | null;
+  /** The tile fills the screen: telemetry then also shows the track map. */
+  focused?: boolean;
 }
 
 /** Draws one widget type from the stream. Every widget shows its own empty state. */
-export function WidgetBody({ tile, state, num, onSelect, selected }: Props) {
+export function WidgetBody({ tile, state, num, onSelect, selected, focused = false }: Props) {
   switch (tile.type) {
     case "tower":
       return <TimingTower state={state} selected={selected} onSelect={onSelect} />;
@@ -64,6 +66,19 @@ export function WidgetBody({ tile, state, num, onSelect, selected }: Props) {
   }
   switch (tile.type) {
     case "telemetry":
+      if (focused) {
+        // Full screen: the readouts beside the whole field on the circuit, the followed driver picked out.
+        return (
+          <div className="grid h-full gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
+            <div className="min-h-0 min-w-0">
+              <TelemetryPanel state={state} selected={num} compact />
+            </div>
+            <div className="min-h-0 min-w-0">
+              <TrackMap state={state} selected={num} />
+            </div>
+          </div>
+        );
+      }
       return <TelemetryPanel state={state} selected={num} compact={tile.w < 8} />;
     case "map":
       return <TrackMap state={state} selected={num} />;

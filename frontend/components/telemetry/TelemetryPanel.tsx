@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { OpenSources } from "../sources/OpenSources";
+import { useFit } from "@/lib/fit";
 import { useStream } from "@/lib/store";
 import type { TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
@@ -37,13 +38,15 @@ function WindowToggle({ value, onChange }: { value: number; onChange: (ms: numbe
   );
 }
 
-function TelemetryBody({ state, num, windowMs, onWindow, paused, compact }: {
+function TelemetryBody({ state, num, windowMs, onWindow, paused, compact, fill }: {
   state: TimingState;
   num: string;
   windowMs: number;
   onWindow: (ms: number) => void;
   paused: boolean;
   compact: boolean;
+  /** Fit mode: the chart takes whatever height the tile has left. */
+  fill: boolean;
 }) {
   const { samples, backfilled, error } = useTelemetryBuffer(state, num);
   const driver = state.DriverList?.[num];
@@ -65,23 +68,23 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused, compact }: {
     // Live-dashboard strip: fixed 30 s window, no toggle, chart about 120px tall.
     const ms = WINDOWS[0];
     return (
-      <div className="flex flex-col gap-3">
+      <div className={`flex flex-col gap-3 ${fill ? "min-h-0 flex-1" : ""}`}>
         <CompactGauges sample={latest} />
-        <div className="flex flex-col gap-1 border-t border-line pt-2">
+        <div className={`flex flex-col gap-1 border-t border-line pt-2 ${fill ? "min-h-0 flex-1" : ""}`}>
           <h3 className="text-micro text-muted">
             Last <span className="num">{ms / 1000}</span> seconds
             {paused && <span className="ml-2 font-normal text-faint">(replay paused)</span>}
           </h3>
-          <RollingChart samples={samples} windowMs={ms} colour={teamColour(driver)} code={code} compact />
+          <RollingChart samples={samples} windowMs={ms} colour={teamColour(driver)} code={code} compact fill={fill} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className={`flex flex-col gap-5 ${fill ? "min-h-0 flex-1" : ""}`}>
       <Gauges sample={latest} />
-      <div className="flex flex-col gap-2 border-t border-line pt-3">
+      <div className={`flex flex-col gap-2 border-t border-line pt-3 ${fill ? "min-h-0 flex-1" : ""}`}>
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-small font-semibold text-muted">
             Last <span className="num">{windowMs / 1000}</span> seconds
@@ -89,7 +92,7 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused, compact }: {
           </h3>
           <WindowToggle value={windowMs} onChange={onWindow} />
         </div>
-        <RollingChart samples={samples} windowMs={windowMs} colour={teamColour(driver)} code={code} />
+        <RollingChart samples={samples} windowMs={windowMs} colour={teamColour(driver)} code={code} fill={fill} />
       </div>
     </div>
   );
@@ -110,6 +113,7 @@ export function TelemetryPanel({
 }) {
   const { status, generation } = useStream();
   const [windowMs, setWindowMs] = useState<number>(WINDOWS[0]);
+  const fit = useFit();
 
   if (!selected) {
     return <EmptyState>Select a driver in the timing tower to see their speed, gear, throttle and brake here.</EmptyState>;
@@ -119,7 +123,7 @@ export function TelemetryPanel({
   const noToken = source?.kind === "live" && !state.Feed?.telemetry;
 
   return (
-    <div className={`flex flex-col ${compact ? "gap-3" : "gap-4"}`}>
+    <div className={`flex flex-col ${fit ? "h-full" : ""} ${compact ? "gap-3" : "gap-4"}`}>
       <DriverLine state={state} num={selected} compact={compact} />
       {noToken ? (
         <EmptyState>
@@ -135,6 +139,7 @@ export function TelemetryPanel({
           onWindow={setWindowMs}
           paused={source?.state === "paused"}
           compact={compact}
+          fill={fit}
         />
       )}
     </div>

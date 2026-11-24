@@ -17,7 +17,9 @@ import { SessionStrip } from "@/components/shell/SessionStrip";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
 import { towerRows } from "@/lib/timing";
+import { FitContext } from "@/lib/fit";
 import { useUi } from "@/lib/ui";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useWorkspace } from "@/lib/useWorkspace";
 import { resolveDriver, WIDGETS, WIDGET_ORDER, type DriverRef } from "@/lib/workspace";
 import { Tile } from "./Tile";
@@ -40,6 +42,8 @@ export function Workspace() {
   const [edit, setEdit] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  // Same query as the fit-mode rules in globals.css.
+  const fit = useMediaQuery("(min-width: 64rem) and (min-height: 40rem)");
 
   const rows = useMemo(() => (state ? towerRows(state) : []), [state]);
   const drivers = useMemo(() => rows.map((r) => ({ num: r.num, code: r.code, name: r.name })), [rows]);
@@ -169,6 +173,7 @@ export function Workspace() {
           </button>
         </div>
       ) : (
+        <FitContext value={fit}>
         <div key={focused ? `focus-${focused.id}` : layout.id} style={{ "--rows": focused ? 1 : gridRows(tiles) } as CSSProperties} className="workspace mt-3 grid grid-cols-1 gap-3 animate-fade-in">
           {tiles.map((t, i) => {
             const num = resolveDriver(t.driver, rows, selected);
@@ -190,11 +195,12 @@ export function Workspace() {
                 onFocus={() => setFocusId(focused ? null : t.id)}
                 onDropTile={(id) => ws.move(id, i)}
               >
-                <WidgetBody tile={t} state={state} num={num} selected={selected} onSelect={select} />
+                <WidgetBody tile={t} state={state} num={num} selected={selected} onSelect={select} focused={!!focused} />
               </Tile>
             );
           })}
         </div>
+        </FitContext>
       )}
     </div>
   );

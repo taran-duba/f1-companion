@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useFitHeight } from "@/lib/fit";
 import { Chip, TeamBar, TyreBadge } from "@/components/timing/Atoms";
 import { EmptyState } from "@/components/Panel";
 import { inLane, pitRows } from "@/lib/pits";
@@ -11,15 +12,19 @@ import type { TimingState } from "@/lib/types";
  * count, the laps it stopped on and an estimate of time lost on the latest stop.
  */
 export function PitStops({ state, selected, onSelect }: { state: TimingState; selected: string | null; onSelect: (num: string) => void }) {
+  const [fitRef, avail] = useFitHeight();
   const rows = useMemo(() => pitRows(state), [state]);
   const lane = inLane(rows);
   const total = rows.reduce((n, r) => n + r.stops.length, 0);
 
   if (!rows.length) return <EmptyState>No cars yet. Pit stops appear once the session starts.</EmptyState>;
 
+  // Fit mode: rows share the tile's height (minus the lane line and its 0.75rem gap).
+  const rowH = avail != null ? Math.max(16, Math.min(40, Math.floor((avail - 14) / rows.length))) : null;
+  const dense = rowH != null && rowH < 28;
   return (
-    <div className="@container flex flex-col gap-3">
-      <div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-small" aria-live="polite">
+    <div ref={fitRef} className={`@container flex flex-col gap-3 ${avail != null ? "h-full overflow-hidden" : ""}`}>
+      <div data-fit-reserve className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-small" aria-live="polite">
         <span className="font-semibold text-muted">In the lane</span>
         {lane.length ? (
           lane.map((r) => (
@@ -36,7 +41,7 @@ export function PitStops({ state, selected, onSelect }: { state: TimingState; se
 
       <table className="w-full border-collapse text-body">
         <caption className="sr-only">Pit stops by driver in running order. Select a row to follow that driver.</caption>
-        <thead>
+        <thead data-fit-reserve>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
             <th scope="col" className="w-9 py-1 pr-1.5 text-right">Pos</th>
             <th scope="col" className="py-1 pl-1">Driver</th>
@@ -50,21 +55,21 @@ export function PitStops({ state, selected, onSelect }: { state: TimingState; se
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className={rowH != null ? "[&_td]:!py-0 [&_*]:!leading-none" : ""}>
           {rows.map(({ row, stops }) => {
             const last = stops.at(-1);
             const on = row.num === selected;
             return (
-              <tr key={row.num} className={`border-b border-line ${row.inPit ? "bg-accent/10" : on ? "bg-raised" : ""}`}>
-                <td className="num py-1 pr-1.5 text-right text-muted">{row.position}</td>
+              <tr key={row.num} style={rowH != null ? { height: rowH } : undefined} className={`border-b border-line ${row.inPit ? "bg-accent/10" : on ? "bg-raised" : ""}`}>
+                <td className="num py-0 pr-1.5 text-right text-muted">{row.position}</td>
                 <td className="py-0 pl-1">
                   <button
                     type="button"
                     onClick={() => onSelect(row.num)}
                     aria-pressed={on}
-                    className="flex min-h-9 w-full items-center gap-2 rounded-chip text-left font-semibold hover:text-accent"
+                    className={`flex w-full items-center gap-2 rounded-chip text-left font-semibold hover:text-accent ${rowH != null ? "h-full min-h-0" : "min-h-9"}`}
                   >
-                    <TeamBar colour={row.teamColour} className="h-5" />
+                    <TeamBar colour={row.teamColour} className={dense ? "h-4" : "h-5"} />
                     {row.code}
                     {row.inPit && <Chip tone="accent">PIT</Chip>}
                     {row.retired && <Chip tone="danger">DNF</Chip>}
@@ -76,7 +81,7 @@ export function PitStops({ state, selected, onSelect }: { state: TimingState; se
                 </td>
                 <td className="py-1 text-right">
                   <span className="inline-flex items-center justify-end gap-1.5">
-                    <TyreBadge compound={row.compound} size={22} />
+                    <TyreBadge compound={row.compound} size={dense ? 16 : 22} />
                     <span className="num w-8 text-left text-small text-muted">{row.tyreAge != null ? `${row.tyreAge}L` : ""}</span>
                   </span>
                 </td>

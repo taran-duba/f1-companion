@@ -50,21 +50,24 @@ export function RollingChart({
   colour,
   code,
   compact = false,
+  fill = false,
 }: {
   samples: TelSample[];
   windowMs: number;
   colour: string;
   code: string;
   compact?: boolean;
+  /** Fit mode: the speed plot stretches to the height of the box (minimum 5rem). */
+  fill?: boolean;
 }) {
   const shown = visible(samples, windowMs);
   const summary = summarise(shown, windowMs, code);
   const ticks = compact ? SPEED_TICKS_COMPACT : SPEED_TICKS;
-  const speedH = compact ? "h-16" : "h-36";
+  const speedH = fill ? "h-full" : compact ? "h-16" : "h-36";
   return (
-    <figure className="m-0">
+    <figure className={`m-0 ${fill ? "min-h-0 flex-1" : ""}`}>
       <figcaption className="sr-only">{summary}</figcaption>
-      <div className={`grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-2 ${compact ? "gap-y-1" : "gap-y-1.5"}`}>
+      <div className={`grid grid-cols-[3.75rem_minmax(0,1fr)] gap-x-2 ${compact ? "gap-y-1" : "gap-y-1.5"} ${fill ? "h-full grid-rows-[minmax(5rem,1fr)_auto_auto_auto]" : ""}`}>
         <div className={`relative text-right ${speedH}`} aria-hidden="true">
           {ticks.map((v) => (
             <span

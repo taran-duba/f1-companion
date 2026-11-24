@@ -75,7 +75,7 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
         over ? "border-accent" : edit ? "border-dashed border-line-control" : "border-line/70 hover:border-line-strong"
       }`}
     >
-      <header className="flex min-h-11 flex-wrap items-center gap-x-1.5 pl-4 pr-2">
+      <header className="flex min-h-11 flex-wrap items-center gap-x-1.5 pl-4 pr-2 lg:min-h-9">
         {edit && (
           <span aria-hidden="true" title="Drag to rearrange" className="-ml-1 cursor-grab text-faint active:cursor-grabbing">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">

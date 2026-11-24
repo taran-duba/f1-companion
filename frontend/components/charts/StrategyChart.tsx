@@ -2,6 +2,7 @@
 
 import { useMemo, type KeyboardEvent, type MouseEvent } from "react";
 import { COMPOUND_STYLE, lapTicks, scaleLinear, stintSpans, type StintSpan } from "@/lib/charts";
+import { useFitHeight } from "@/lib/fit";
 import { stints, towerRows, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
@@ -28,6 +29,7 @@ interface Props {
 /** Tyre strategy for the whole field in running order: one bar per stint across the race laps. */
 export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
   const { ref, width } = useChartWidth();
+  const [fitRef, avail] = useFitHeight();
   const data: StrategyRow[] = useMemo(
     () =>
       towerRows(state).map((row) => ({
@@ -51,8 +53,10 @@ export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
 
   const narrow = width < 640;
   // Phone rows are tap targets: the highlight rect (rowH − 2) must stay ≥ 44px.
-  const rowH = onSelect && narrow ? 46 : 28;
-  const barH = 18;
+  // Fit mode (workspace tile): rows share the height left after the axis, the legend and the gap.
+  const fitRowH = avail != null ? Math.floor((avail - 22 - 38 - 8) / data.length) : null;
+  const rowH = fitRowH != null ? Math.max(16, Math.min(30, fitRowH)) : onSelect && narrow ? 46 : 28;
+  const barH = Math.min(18, rowH - 4);
   const labelW = 72; // fits a wide code like "KOW" with a gap before the first bar
   const plot: Plot = {
     left: labelW,
@@ -71,7 +75,7 @@ export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
     `The table below lists every stint.`;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={fitRef} className={`flex flex-col gap-2 ${avail != null ? "h-full overflow-hidden" : ""}`}>
       <ChartFigure summary={summary} innerRef={ref}>
         <ChartSvg width={width} height={height} label={onSelect ? "Tyre strategy: choose a driver" : undefined}>
           <g aria-hidden="true">
@@ -113,7 +117,7 @@ export function StrategyChart({ state, onSelect, selected, hrefFor }: Props) {
           ))}
         </ChartSvg>
       </ChartFigure>
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-small text-muted" aria-hidden="true">
+      <p data-fit-reserve className="flex flex-wrap gap-x-4 gap-y-1 text-small text-muted" aria-hidden="true">
         {(Object.keys(COMPOUND_STYLE) as (keyof typeof COMPOUND_STYLE)[])
           .filter((c) => present.has(c))
           .map((c) => (

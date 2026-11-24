@@ -100,25 +100,25 @@ const PRESET_NAMES: Record<PresetKey, string> = {
 
 const PRESET_TILES: Record<PresetKey, () => Tile[]> = {
   // Three tiles at most: a layout is one idea, and the background art needs room to show.
+  // Laptop heights are scarce and widths are not, so every tile is a full-height column.
   race: () => [
-    tile("tower", { w: 5 }),
-    tile("telemetry", { w: 7, h: 6 }),
-    tile("map", { w: 7, h: 6 }),
+    tile("tower", { w: 4 }),
+    tile("telemetry", { w: 4, h: 12 }),
+    tile("map", { w: 4, h: 12 }),
   ],
   duel: () => [
     tile("tower", { w: 4 }),
-    tile("telemetry", { w: 8, h: 6 }),
-    tile("telemetry", { w: 8, h: 6, driver: "behind" }),
+    tile("telemetry", { w: 4, h: 12 }),
+    tile("telemetry", { w: 4, h: 12, driver: "behind" }),
   ],
   pit: () => [
-    tile("tower", { w: 4 }),
-    tile("pits", { w: 8, h: 6 }),
-    tile("strategy", { w: 8, h: 6 }),
+    tile("pits", { w: 5, h: 12 }),
+    tile("strategy", { w: 7, h: 12 }),
   ],
   analysis: () => [
     tile("tower", { w: 4 }),
-    tile("laps", { w: 8, h: 6 }),
-    tile("sectors", { w: 8, h: 6 }),
+    tile("laps", { w: 4, h: 12 }),
+    tile("sectors", { w: 4, h: 12 }),
   ],
 };
 
@@ -230,7 +230,7 @@ export function resolveDriver(ref: DriverRef, rows: TowerRow[], selected: string
 // Persistence
 // ---------------------------------------------------------------------------
 
-export const STORAGE_KEY = "f1c.workspace.v2";
+export const STORAGE_KEY = "f1c.workspace.v3";
 
 const isType = (v: unknown): v is WidgetType => typeof v === "string" && v in WIDGETS;
 const isRef = (v: unknown): v is DriverRef =>
