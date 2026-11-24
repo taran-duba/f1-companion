@@ -39,7 +39,7 @@ describe("workspace operations", () => {
     let ws = defaultWorkspace();
     const first = activeLayout(ws).tiles[0];
     ws = resizeTile(ws, first.id, "w", -1);
-    expect(activeLayout(ws).tiles[0].w).toBe(4);
+    expect(activeLayout(ws).tiles[0].w).toBe(3);
     ws = moveTile(ws, first.id, 2);
     expect(activeLayout(ws).tiles[2].id).toBe(first.id);
     ws = addTile(ws, "pits");

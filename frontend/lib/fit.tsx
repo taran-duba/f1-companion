@@ -16,10 +16,7 @@ export function useFitHeight(): [(el: HTMLDivElement | null) => void, number | n
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const [avail, setAvail] = useState<number | null>(null);
   useLayoutEffect(() => {
-    if (!fit || !el) {
-      setAvail(null);
-      return;
-    }
+    if (!fit || !el) return;
     const measure = () => {
       let reserve = 0;
       el.querySelectorAll<HTMLElement>("[data-fit-reserve]").forEach((n) => {
@@ -35,5 +32,5 @@ export function useFitHeight(): [(el: HTMLDivElement | null) => void, number | n
     el.querySelectorAll("[data-fit-reserve]").forEach((n) => ro.observe(n));
     return () => ro.disconnect();
   }, [fit, el]);
-  return [setEl, avail];
+  return [setEl, fit ? avail : null];
 }
