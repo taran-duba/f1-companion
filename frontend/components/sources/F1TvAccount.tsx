@@ -13,8 +13,9 @@ const BTN_PRIMARY =
   "inline-flex min-h-11 items-center justify-center rounded-chip bg-accent px-4 text-body font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
- * F1 TV sign-in: paste the token once and the backend keeps it. The token never comes back
- * to the browser; the panel only learns whether one is set and where it came from.
+ * F1 TV sign-in: enter your F1 account email and password once and the backend swaps them for
+ * the token and keeps only that (or paste a token yourself). The token never comes back
+ * to the browser, and the password is never kept; the panel only learns whether one is set and where it came from.
  */
 export function F1TvAccount({ status }: { status: ServerStatus | null }) {
   const { wantToken } = useUi();
@@ -23,16 +24,19 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
   const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState<"save" | "clear" | null>(null);
+  const [busy, setBusy] = useState<"save" | "clear" | "login" | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const emailInput = useRef<HTMLInputElement>(null);
 
   const formOpen = present === false || editing;
 
   // A telemetry tile sent the user here to add a token: land in the field.
   useEffect(() => {
-    if (wantToken && formOpen) input.current?.focus();
+    if (wantToken && formOpen) emailInput.current?.focus();
   }, [wantToken, formOpen]);
 
   async function save(e: React.FormEvent) {
@@ -56,6 +60,33 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
       );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save the token.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function signIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      setError("Enter the email and password of your F1 account.");
+      emailInput.current?.focus();
+      return;
+    }
+    setBusy("login");
+    setError(null);
+    try {
+      await api.post("/api/credentials/login", { email, password });
+      setEmail("");
+      setPassword("");
+      setEditing(false);
+      setSaved(
+        status?.source.kind === "live"
+          ? "Signed in. Reconnecting to live timing: car telemetry starts in a few seconds."
+          : "Signed in. Car telemetry switches on the next time you use live timing.",
+      );
+    } catch (err) {
+      setPassword("");
+      setError(err instanceof ApiError ? err.message : "Couldn't sign in.");
     } finally {
       setBusy(null);
     }
@@ -112,7 +143,67 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
         )}
 
         {formOpen && (
-          <form onSubmit={save} noValidate className="grid gap-2">
+          <form onSubmit={signIn} noValidate className="grid gap-2">
+            <label htmlFor="f1tv-email" className="text-small font-semibold text-muted">
+              F1 account email
+            </label>
+            <input
+              ref={emailInput}
+              id="f1tv-email"
+              name="f1tv-email"
+              type="email"
+              autoComplete="username"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={FIELD}
+            />
+            <label htmlFor="f1tv-password" className="text-small font-semibold text-muted">
+              Password
+            </label>
+            <input
+              id="f1tv-password"
+              name="f1tv-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={FIELD}
+            />
+            <p className="text-small text-faint">
+              Sent once to F1&apos;s sign-in service to get your token. Only the token is kept, in{" "}
+              <code className="font-mono text-muted">data/credentials.json</code> on the backend machine; your password is not.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" className={BTN_PRIMARY} disabled={busy !== null}>
+                {busy === "login" ? "Signing in…" : "Sign in"}
+              </button>
+              {editing && (
+                <button
+                  type="button"
+                  className={BTN}
+                  onClick={() => {
+                    setEditing(false);
+                    setEmail("");
+                    setPassword("");
+                    setValue("");
+                    setError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        )}
+
+        {formOpen && (
+          <details className="group text-small">
+            <summary className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline-offset-4 hover:underline">
+              Or paste a token instead
+            </summary>
+          <form onSubmit={save} noValidate className="mt-1 grid gap-2">
             <label htmlFor="f1tv-token" className="text-small font-semibold text-muted">
               F1 TV token
             </label>
@@ -144,21 +235,9 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
               <button type="submit" className={BTN_PRIMARY} disabled={busy !== null}>
                 {busy === "save" ? "Saving…" : "Save token"}
               </button>
-              {editing && (
-                <button
-                  type="button"
-                  className={BTN}
-                  onClick={() => {
-                    setEditing(false);
-                    setValue("");
-                    setError(null);
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
             </div>
           </form>
+          </details>
         )}
 
         <div aria-live="polite" className="text-small">
@@ -172,7 +251,7 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
 
         <details className="group text-small">
           <summary className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline-offset-4 hover:underline">
-            Where do I find my token?
+            Where do I find a token to paste?
           </summary>
           <ol className="mt-1 ml-5 list-decimal space-y-1 text-muted">
             <li>Sign in at f1tv.formula1.com with your subscription account.</li>
@@ -184,7 +263,7 @@ export function F1TvAccount({ status }: { status: ServerStatus | null }) {
             </li>
           </ol>
           <p className="mt-2 text-faint">
-            Tokens expire. If car telemetry stops working, paste a fresh one here: no restart needed.
+            Tokens expire. If car telemetry stops working, sign in again (or paste a fresh token) here: no restart needed.
           </p>
         </details>
       </div>

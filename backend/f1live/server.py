@@ -27,7 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import credentials
+from . import credentials, f1auth
 from .manager import DEMO_PATH, SourceManager, list_recordings
 from .state import StateStore
 
@@ -161,6 +161,11 @@ class CredentialsRequest(BaseModel):
     token: str = Field(max_length=credentials.MAX_LEN + 64)
 
 
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1, max_length=512)
+
+
 def create_app(initial_source: str | None = None) -> FastAPI:
     store = StateStore()
     hub: Hub | None = None
@@ -283,6 +288,19 @@ def create_app(initial_source: str | None = None) -> FastAPI:
             credentials.save(req.token)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        await _reapply_token()
+        return manager.status()
+
+    @app.post("/api/credentials/login")
+    async def login_credentials(req: LoginRequest) -> dict:
+        """Sign in to F1 TV with an email and password; only the returned token is kept."""
+        try:
+            token = await f1auth.login(req.email.strip(), req.password)
+            credentials.save(token)
+        except f1auth.LoginError as exc:
+            raise HTTPException(exc.status, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(502, "F1 returned a token this app can't use. Paste one manually instead.") from exc
         await _reapply_token()
         return manager.status()
 
