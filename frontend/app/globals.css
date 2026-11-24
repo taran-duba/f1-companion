@@ -185,14 +185,14 @@
    share whatever height the top bar, session strip and dock leave, and tiles scroll inside
    themselves. Shorter windows and the other pages keep the normal scrolling page. */
 @media (width >= 64rem) and (height >= 40rem) {
-  body:has(.ws-fit) {
+  body[data-ws-fit] {
     overflow: hidden;
   }
-  body:has(.ws-fit) :is(.app-shell, .app-inner) {
+  body[data-ws-fit] :is(.app-shell, .app-inner) {
     height: 100dvh;
     min-height: 0;
   }
-  body:has(.ws-fit) .app-main {
+  body[data-ws-fit] .app-main {
     display: flex;
     flex-direction: column;
     min-height: 0;
