@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { OpenSources } from "../sources/OpenSources";
 import { useFit } from "@/lib/fit";
 import { useStream } from "@/lib/store";
 import type { TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
 import { DriverLine } from "./DriverLine";
-import { CompactGauges, Gauges } from "./Gauges";
+import { CompactGauges, Gauges, type AeroInfo } from "./Gauges";
 import { RollingChart } from "./RollingChart";
 import { useTelemetryBuffer } from "./useTelemetryBuffer";
-import { teamColour } from "@/lib/timing";
+import { aeroRules, sessionKind, teamColour, towerRows } from "@/lib/timing";
 
 const WINDOWS = [30_000, 60_000] as const;
 
@@ -52,6 +52,11 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused, compact, fill }
   const driver = state.DriverList?.[num];
   const code = driver?.Tla ?? num;
   const latest = samples[samples.length - 1] ?? null;
+  // 2026 on: overtake mode is open to a car within a second of the one ahead (the tower's battle rule).
+  const aero = useMemo<AeroInfo>(() => {
+    const row = towerRows(state).find((r) => r.num === num);
+    return { rules: aeroRules(state), overtake: sessionKind(state) === "race" && row ? row.battle : null };
+  }, [state, num]);
 
   if (!latest) {
     if (!backfilled) return <p className="text-small text-muted">Loading recent telemetry for {code}…</p>;
@@ -69,7 +74,7 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused, compact, fill }
     const ms = WINDOWS[0];
     return (
       <div className={`flex flex-col gap-3 ${fill ? "min-h-0 flex-1" : ""}`}>
-        <CompactGauges sample={latest} />
+        <CompactGauges sample={latest} aero={aero} />
         <div className={`flex flex-col gap-1 border-t border-line pt-2 ${fill ? "min-h-0 flex-1" : ""}`}>
           <h3 className="text-micro text-muted">
             Last <span className="num">{ms / 1000}</span> seconds
@@ -83,7 +88,7 @@ function TelemetryBody({ state, num, windowMs, onWindow, paused, compact, fill }
 
   return (
     <div className={`flex flex-col gap-5 ${fill ? "min-h-0 flex-1" : ""}`}>
-      <Gauges sample={latest} />
+      <Gauges sample={latest} aero={aero} />
       <div className={`flex flex-col gap-2 border-t border-line pt-3 ${fill ? "min-h-0 flex-1" : ""}`}>
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-small font-semibold text-muted">

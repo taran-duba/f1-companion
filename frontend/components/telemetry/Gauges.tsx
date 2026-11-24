@@ -34,6 +34,33 @@ function BarRow({ label, value, max, tone, unit }: { label: string; value: numbe
   );
 }
 
+/** Which overtaking aid the season has, and whether this car can use overtake mode now. */
+export interface AeroInfo {
+  rules: "drs" | "active";
+  /** 2026+: within a second of the car ahead in a green race (null outside a race). */
+  overtake: boolean | null;
+}
+
+const PILL = "inline-flex min-h-7 items-center whitespace-nowrap rounded-full border px-2.5 text-micro font-bold";
+
+/**
+ * DRS until 2025; from 2026 overtake mode, judged from timing (within a second of the car
+ * ahead). Active aero isn't shown: every car uses it on the marked straights, and F1's 2026
+ * car data doesn't report the wing (the old DRS channel reads 0 throughout).
+ */
+export function AeroPill({ drs, aero }: { drs: number | null; aero: AeroInfo }) {
+  if (aero.rules === "drs") return <DrsPill drs={drs} />;
+  if (aero.overtake == null) return null;
+  return (
+    <span
+      title={aero.overtake ? "Within a second of the car ahead: extra electrical energy to attack" : "Overtake mode needs the car within a second of the one ahead"}
+      className={`${PILL} ${aero.overtake ? "border-ok bg-ok text-ink" : "border-line-strong text-faint"}`}
+    >
+      {aero.overtake ? "Overtake mode" : "Overtake off"}
+    </span>
+  );
+}
+
 export function DrsPill({ drs }: { drs: number | null }) {
   const { label, state } = drsLabel(drs ?? 0);
   const cls =
@@ -70,10 +97,11 @@ function PedalCell({ label, value, tone, area }: { label: string; value: number 
 }
 
 /**
- * Dense one-row readout for the live dashboard: speed, gear, throttle, brake, RPM, DRS.
+ * Dense one-row readout for the live dashboard: speed, gear, throttle, brake, RPM, and DRS or
+ * (2026 on) overtake mode.
  * Wraps the pedal bars onto a second row when the panel is narrower than ~32rem.
  */
-export function CompactGauges({ sample }: { sample: TelSample | null }) {
+export function CompactGauges({ sample, aero }: { sample: TelSample | null; aero: AeroInfo }) {
   const s = sample;
   return (
     <div className="@container">
@@ -102,15 +130,15 @@ export function CompactGauges({ sample }: { sample: TelSample | null }) {
           <div className="num text-body font-medium leading-8 text-text">{s ? s.rpm.toLocaleString("en-GB") : <Dash />}</div>
         </div>
         <div className="self-end pb-0.5" style={{ gridArea: "drs" }}>
-          <DrsPill drs={s ? s.drs : null} />
+          <AeroPill drs={s ? s.drs : null} aero={aero} />
         </div>
       </div>
     </div>
   );
 }
 
-/** Live readouts for the newest sample: speed, gear, DRS, throttle, brake, RPM. */
-export function Gauges({ sample }: { sample: TelSample | null }) {
+/** Live readouts for the newest sample: speed, gear, DRS or overtake mode, throttle, brake, RPM. */
+export function Gauges({ sample, aero }: { sample: TelSample | null; aero: AeroInfo }) {
   const s = sample;
   return (
     <div className="flex flex-col gap-4">
@@ -132,7 +160,7 @@ export function Gauges({ sample }: { sample: TelSample | null }) {
           <div className="num flex size-12 items-center justify-center rounded-panel border border-line-strong bg-raised text-headline font-bold text-text">
             {s ? gearLabel(s.gear) : "—"}
           </div>
-          <DrsPill drs={s ? s.drs : null} />
+          <AeroPill drs={s ? s.drs : null} aero={aero} />
         </div>
       </div>
       <div className="flex flex-col gap-2.5">

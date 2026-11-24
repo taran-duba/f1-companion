@@ -5,7 +5,7 @@ import { detectEvents, wanted } from "@/lib/events";
 import { DEFAULT_PREFS, isFavourite, parsePrefs } from "@/lib/prefs";
 import { contrast } from "@/lib/theme/color";
 import { checkTheme, derive, parseCustom, PRESETS, themeVars } from "@/lib/theme/themes";
-import { qualiPart, sessionKind, towerRows } from "@/lib/timing";
+import { aeroRules, qualiPart, season, sessionKind, towerRows } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
 
 function race(lines: Record<string, object>, extra: Partial<TimingState> = {}): TimingState {
@@ -126,6 +126,20 @@ describe("tower extras", () => {
     expect(rows[3].bestLap.value).toBe("1:29.000");
     expect(rows[3].bestLap.mark).toBe("none");
     expect(rows.every((r) => r.gained == null && !r.battle)).toBe(true);
+  });
+});
+
+describe("overtaking aids by season", () => {
+  const at = (StartDate?: string, Path?: string) => ({ SessionInfo: { StartDate, Path } }) as TimingState;
+  it("uses DRS until 2025 and active aero with overtake mode from 2026", () => {
+    expect(season(at("2025-12-07T13:00:00"))).toBe(2025);
+    expect(aeroRules(at("2025-12-07T13:00:00"))).toBe("drs");
+    expect(aeroRules(at("2026-03-08T04:00:00"))).toBe("active");
+    expect(aeroRules(at(undefined, "2024/2024-03-02_Bahrain_Grand_Prix/2024-03-02_Race/"))).toBe("drs");
+  });
+  it("falls back to the current year when the session has no date", () => {
+    expect(aeroRules(at(), new Date("2025-06-01"))).toBe("drs");
+    expect(aeroRules(at(), new Date("2026-06-01"))).toBe("active");
   });
 });
 

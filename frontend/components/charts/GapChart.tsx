@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { asList } from "@/lib/merge";
 import { extent, lapTicks, linePath, neutralWindows, niceDomain, niceTicks, pitStops, scaleLinear } from "@/lib/charts";
-import { lapHistory, towerRows, trackStatus, type TowerRow } from "@/lib/timing";
+import { aeroRules, lapHistory, towerRows, trackStatus, type TowerRow } from "@/lib/timing";
 import type { RaceControlMessage, TimingState } from "@/lib/types";
 import { EmptyState } from "../Panel";
 import { ChartFigure, ChartSvg, HALO, LapAxis, NeutralBand, PitChip, PitMarker, YGrid, type Plot } from "./ChartParts";
@@ -137,7 +137,7 @@ function IntervalChart({ state, row, ahead }: { state: TimingState; row: TowerRo
           ))}
           <YGrid y={y} ticks={yTicks} plot={plot} format={stepFmt} title="Interval (s)" />
           <LapAxis x={x} ticks={xTicks} plot={plot} labelGap={36} />
-          {/* 1 s battle / DRS window */}
+          {/* 1 s battle window: DRS until 2025, overtake mode from 2026 */}
           <line
             x1={plot.left}
             x2={plot.right}
@@ -169,7 +169,7 @@ function IntervalChart({ state, row, ahead }: { state: TimingState; row: TowerRo
       <p className="flex flex-wrap gap-x-4 gap-y-1 text-small text-muted">
         <span>
           <span aria-hidden="true" className="mr-1 inline-block w-5 border-t-2 border-dashed border-warn align-middle" />
-          Within 1 s: DRS range
+          Within 1 s: {aeroRules(state) === "active" ? "overtake mode range" : "DRS range"}
         </span>
         <span>
           <PitChip />

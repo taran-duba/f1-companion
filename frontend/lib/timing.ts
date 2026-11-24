@@ -331,6 +331,23 @@ export function weather(state: TimingState) {
   };
 }
 
+/** The season a session belongs to: SessionInfo.StartDate, else the archive path ("2026/…"). */
+export function season(state: TimingState): number | null {
+  const fromDate = Number(state.SessionInfo?.StartDate?.slice(0, 4));
+  if (Number.isInteger(fromDate) && fromDate > 1949) return fromDate;
+  const fromPath = Number((state.SessionInfo as { Path?: string } | undefined)?.Path?.match(/^(\d{4})\//)?.[1]);
+  return Number.isInteger(fromPath) && fromPath > 1949 ? fromPath : null;
+}
+
+/**
+ * Overtaking aids by season: DRS until 2025; from 2026 every car runs active aero (low-drag
+ * straight mode on marked straights) and a car within a second of the one ahead gets overtake
+ * mode (extra electrical energy). An unknown season counts as the current year.
+ */
+export function aeroRules(state: TimingState, now = new Date()): "drs" | "active" {
+  return (season(state) ?? now.getFullYear()) >= 2026 ? "active" : "drs";
+}
+
 export function drsLabel(drs: number): { label: string; state: "off" | "eligible" | "open" } {
   if (drs === 10 || drs === 12 || drs === 14) return { label: "DRS open", state: "open" };
   if (drs === 8) return { label: "DRS available", state: "eligible" };
