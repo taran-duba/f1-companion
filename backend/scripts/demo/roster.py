@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # (team name, hex colour, relative pace deficit as a fraction of lap time)
 TEAMS: list[tuple[str, str, float]] = [
     ("Halcyon Racing", "E8402A", 0.000),
-    ("Nordlys Grand Prix", "2F6FE0", 0.002),
+    ("Nordlys Autosport", "2F6FE0", 0.002),
     ("Cobalt Dynamics", "F59E0B", 0.005),
     ("Ironbark Motorsport", "15B39A", 0.008),
     ("Solstice F1 Team", "9B5DE5", 0.011),
@@ -19,7 +19,7 @@ TEAMS: list[tuple[str, str, float]] = [
     ("Talon Racing", "36C24A", 0.018),
     ("Aster Velocity", "FF5FA2", 0.022),
     ("Kinetic Forge", "5468FF", 0.027),
-    ("Brightwater GP", "FFD400", 0.035),
+    ("Brightwater Racing", "FFD400", 0.035),
 ]
 
 # (racing number, first name, last name, TLA, team index, country code)

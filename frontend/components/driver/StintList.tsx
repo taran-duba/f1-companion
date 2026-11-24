@@ -33,7 +33,7 @@ export function StintList({ stints, totalLaps, ended = false }: { stints: StintV
           s.laps > 0 ? (
             <div
               key={s.index}
-              className="flex min-w-0 items-center justify-center text-micro font-bold text-bg"
+              className="flex min-w-0 items-center justify-center text-micro font-bold text-ink"
               style={{ flexGrow: s.laps, flexBasis: 0, background: FILL[s.compound] }}
             >
               {s.laps / scale > 0.06 && LETTER[s.compound]}

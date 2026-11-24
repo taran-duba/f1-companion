@@ -1,18 +1,26 @@
 @import "tailwindcss";
 
-/* Design tokens — see DESIGN_SYSTEM.md. The app is dark only. */
+/* Design tokens — see DESIGN_SYSTEM.md. These are the Broadcast theme's values; the theme
+   picker (lib/theme) overrides every colour below at runtime on <html>, and the colours
+   are derived from five picked ones (lib/theme/themes.ts), so keep the two in step. */
 @theme {
   /* Surfaces & text */
-  --color-bg: #0e0b0d;
-  --color-surface: #161115;
-  --color-raised: #231a20;
-  --color-line: #31242b;
-  --color-line-strong: #4a3640;
-  --color-line-control: #997885;
-  --color-text: #fbf4ef;
-  --color-muted: #cdb9b9;
-  --color-faint: #a78f93;
-  --color-accent: #ffa24d;
+  --color-bg: #0a0b0d;
+  --color-surface: #121418;
+  --color-raised: #222428;
+  --color-line: #2f3135;
+  --color-line-strong: #484a4e;
+  --color-line-control: #717376;
+  --color-text: #f4f5f7;
+  --color-muted: #b9bbbd;
+  --color-faint: #959799;
+  --color-accent: #e10600;
+  /* Text on an accent fill. */
+  --color-on-accent: #ffffff;
+  /* Marker on the selected row and car. */
+  --color-select: #ffffff;
+  /* Text on bright fills (flag pills, tyre bars): dark in every theme. */
+  --color-ink: #0b0c0e;
 
   /* Status */
   --color-ok: #3ddc84;
@@ -106,6 +114,11 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Background art tones ("r,g,b"), set per theme. */
+    --art-0: 225, 6, 0;
+    --art-1: 239, 101, 101;
+    --art-2: 130, 8, 7;
+    --art-comet: 240, 135, 132;
   }
   html {
     background: var(--color-bg);

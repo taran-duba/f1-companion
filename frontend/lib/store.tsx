@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { apiBase } from "./api";
+import { usePrefs } from "./prefs";
 import { TimingStream, type StreamSnapshot } from "./stream";
 
 const StreamContext = createContext<TimingStream | null>(null);
@@ -14,16 +15,22 @@ const EMPTY: StreamSnapshot = {
   attempts: 0,
   lastEventAt: null,
   generation: 0,
+  delayMs: 0,
+  pendingUntil: null,
   version: 0,
 };
 
 export function StreamProvider({ children }: { children: ReactNode }) {
   const [stream] = useState(() => (typeof window === "undefined" ? null : new TimingStream({ url: `${apiBase()}/api/stream` })));
+  const { delaySec } = usePrefs().prefs;
   useEffect(() => {
     if (!stream) return;
     stream.start();
     return () => stream.stop();
   }, [stream]);
+  useEffect(() => {
+    stream?.setDelay(delaySec * 1000);
+  }, [stream, delaySec]);
   return <StreamContext.Provider value={stream}>{children}</StreamContext.Provider>;
 }
 

@@ -14,6 +14,7 @@ import { RaceControlFeed } from "@/components/RaceControlFeed";
 import { TelemetryPanel } from "@/components/telemetry/TelemetryPanel";
 import { TimingTower } from "@/components/timing/TimingTower";
 import { PitStops } from "@/components/widgets/PitStops";
+import { TeamRadio } from "@/components/widgets/TeamRadio";
 import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { neutralWindows } from "@/lib/charts";
 import { asList } from "@/lib/merge";
@@ -48,6 +49,8 @@ export function WidgetBody({ tile, state, num, onSelect, selected, focused = fal
       return <WeatherWidget state={state} />;
     case "battles":
       return <Battles state={state} />;
+    case "radio":
+      return <TeamRadio state={state} />;
     default:
       break;
   }

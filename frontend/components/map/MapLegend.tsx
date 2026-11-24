@@ -14,7 +14,7 @@ export function MapLegend() {
         <span
           aria-hidden="true"
           className="block size-3 rounded-full border-2 border-bg bg-muted"
-          style={{ boxShadow: "0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-accent)" }}
+          style={{ boxShadow: "0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-select)" }}
         />
         Selected
       </li>

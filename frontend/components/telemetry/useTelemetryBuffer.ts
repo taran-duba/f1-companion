@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type TelemetryWindow } from "@/lib/api";
 import { anchorWindow, appendSample, BUFFER_MS, fromWindow, mergeBackfill, parseUtc, toSample, type TelSample } from "@/lib/telemetry";
+import { useStream } from "@/lib/store";
 import type { TimingState } from "@/lib/types";
 
 export interface TelemetryBuffer {
@@ -46,9 +47,12 @@ export function useTelemetryBuffer(state: TimingState, num: string): TelemetryBu
   }
 
   const utcRef = useRef(utc);
+  const { delayMs } = useStream();
+  const delayRef = useRef(delayMs);
   useEffect(() => {
     utcRef.current = utc;
-  }, [utc]);
+    delayRef.current = delayMs;
+  }, [utc, delayMs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,10 +65,13 @@ export function useTelemetryBuffer(state: TimingState, num: string): TelemetryBu
       if (inFlight || (!first && at === syncedUtc)) return;
       const since = parseUtc(syncedUtc);
       const now = parseUtc(at);
+      // With a TV delay the server is `delay` ahead of this page: fetch that much more and
+      // keep nothing newer than what the page shows.
+      const delayS = Math.ceil(delayRef.current / 1000);
       const secs =
-        first || since == null || now == null
+        (first || since == null || now == null
           ? BUFFER_MS / 1000
-          : Math.min(BUFFER_MS / 1000, Math.ceil((now - since) / 1000) + RESYNC_OVERLAP_S);
+          : Math.min(BUFFER_MS / 1000, Math.ceil((now - since) / 1000) + RESYNC_OVERLAP_S)) + delayS;
       const initial = first;
       first = false;
       inFlight = true;
@@ -73,10 +80,15 @@ export function useTelemetryBuffer(state: TimingState, num: string): TelemetryBu
         .then((win) => {
           if (cancelled) return;
           syncedUtc = at;
-          const fallback = parseUtc(utcRef.current);
+          const newest = parseUtc(utcRef.current);
+          const fallback = newest == null ? null : newest + delayS * 1000;
           setSamples((buf) => {
-            const anchor = anchorWindow(win, buf, fallback);
-            return anchor == null ? buf : mergeBackfill(fromWindow(win, anchor), buf, BUFFER_MS);
+            const anchor = anchorWindow(win, buf, fallback, 10 + delayS);
+            if (anchor == null) return buf;
+            let history = fromWindow(win, anchor);
+            const shown = buf[buf.length - 1]?.t ?? newest;
+            if (delayS > 0 && shown != null) history = history.filter((s) => s.t <= shown);
+            return mergeBackfill(history, buf, BUFFER_MS);
           });
           setError(null);
           if (initial) setBackfilled(true);

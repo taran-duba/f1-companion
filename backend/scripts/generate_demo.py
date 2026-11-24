@@ -46,6 +46,7 @@ def simulate(seed: int = DEFAULT_SEED, laps: int = DEFAULT_LAPS) -> tuple[list[M
     stats["duration"] = msgs[-1].t if msgs else 0.0
     stats["classification"] = [(c.num, c.info.tla, c.laps_done, "DNF" if c.retired else "") for c in race.order]
     stats["stops"] = {c.num: c.stops for c in race.cars}
+    stats["radio"] = list(race.radio.clips)
     return msgs, stats
 
 

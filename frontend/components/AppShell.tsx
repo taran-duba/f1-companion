@@ -8,6 +8,7 @@ import { FlagBand } from "./FlagBand";
 import { PlaybackDock } from "./shell/PlaybackDock";
 import { TopBar } from "./shell/TopBar";
 import { SourcePanel } from "./sources/SourcePanel";
+import { Toasts } from "./Toasts";
 
 /**
  * Frame for every page: the Slipstream background, flag band, top bar, the page, the
@@ -30,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="app-inner relative z-10 flex min-h-dvh flex-1 flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-chip focus:bg-accent focus:px-3 focus:py-2 focus:font-semibold focus:text-bg"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-chip focus:bg-accent focus:px-3 focus:py-2 focus:font-semibold focus:text-on-accent"
         >
           Skip to content
         </a>
@@ -40,6 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
         <PlaybackDock />
+        <Toasts />
         <SourcePanel />
       </div>
     </div>

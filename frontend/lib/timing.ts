@@ -36,6 +36,55 @@ export interface TowerRow {
   stopped: boolean;
   battle: boolean;
   catching: boolean;
+  /** Starting position (races), when the feed has it. */
+  grid: number | null;
+  /** Places gained since the start (negative: lost). Races only. */
+  gained: number | null;
+  /** Holds the fastest lap of the session. */
+  fastestLap: boolean;
+  /** Qualifying: eliminated in an earlier part. */
+  knockedOut: boolean;
+  /** Qualifying: currently below the cut for the next part. */
+  dropZone: boolean;
+}
+
+export type SessionKind = "race" | "quali" | "practice";
+
+/** Race (and sprint), qualifying (and sprint qualifying), or practice. */
+export function sessionKind(state: TimingState): SessionKind {
+  const type = (state.SessionInfo?.Type ?? "").toLowerCase();
+  const name = (state.SessionInfo?.Name ?? "").toLowerCase();
+  if (type === "qualifying" || /qualifying|shootout/.test(name)) return "quali";
+  if (type === "practice" || /practice/.test(name)) return "practice";
+  return "race";
+}
+
+export interface QualiPart {
+  /** 1, 2 or 3. */
+  part: number;
+  /** "Q2", or "SQ2" in sprint qualifying. */
+  label: string;
+  /** Cars from this position down are in the drop zone (null in the final part). */
+  cutoff: number | null;
+  /** Cars taking part in each part, e.g. [22, 16, 10]. */
+  entries: number[];
+}
+
+/** Which part of qualifying is running and where the cut is. Null outside qualifying. */
+export function qualiPart(state: TimingState): QualiPart | null {
+  if (sessionKind(state) !== "quali") return null;
+  const part = Number(state.TimingData?.SessionPart);
+  if (!Number.isInteger(part) || part < 1) return null;
+  const entries = asList<number>(state.TimingData?.NoEntries).map(Number);
+  const next = entries[part];
+  const sprint = /sprint|shootout/i.test(state.SessionInfo?.Name ?? "");
+  return { part, label: `${sprint ? "SQ" : "Q"}${part}`, cutoff: Number.isFinite(next) && next > 0 ? next : null, entries };
+}
+
+/** The part of qualifying a knocked-out car fell in (1 or 2), from its final position. */
+export function knockedOutIn(position: number, q: QualiPart): number {
+  const second = q.entries[1];
+  return Number.isFinite(second) && position > second ? 1 : 2;
 }
 
 export function parseGap(raw: unknown): Gap {
@@ -106,6 +155,8 @@ export function teamColour(d: DriverInfo | undefined): string {
 export function towerRows(state: TimingState): TowerRow[] {
   const lines = state.TimingData?.Lines ?? {};
   const drivers = state.DriverList ?? {};
+  const kind = sessionKind(state);
+  const quali = qualiPart(state);
   const rows: TowerRow[] = [];
   for (const [num, line] of Object.entries(lines) as [string, TimingLine][]) {
     if (!line) continue;
@@ -113,7 +164,14 @@ export function towerRows(state: TimingState): TowerRow[] {
     const sectors = asList<SectorTiming>(line.Sectors);
     const stint = currentStint(state, num);
     const pos = Number(line.Position ?? line.Line ?? 99);
-    const interval = parseGap(line.IntervalToPositionAhead?.Value);
+    const grid = Number(state.TimingAppData?.Lines?.[num]?.GridPos);
+    // Away from a race, gaps are to the fastest lap of the session (or of this part).
+    const stat = quali ? asList<{ TimeDiffToFastest?: string; TimeDifftoPositionAhead?: string }>(line.Stats)[quali.part - 1] : undefined;
+    const interval = kind === "race" ? parseGap(line.IntervalToPositionAhead?.Value) : parseGap(line.TimeDiffToPositionAhead ?? stat?.TimeDifftoPositionAhead);
+    const gap = kind === "race" ? parseGap(line.GapToLeader) : parseGap(line.TimeDiffToFastest ?? stat?.TimeDiffToFastest);
+    // A knocked-out car keeps the last time it set; everyone else shows this part's best.
+    const bests = quali ? asList<{ Value?: string }>(line.BestLapTimes).map((b) => b?.Value ?? "") : [];
+    const partBest = quali ? (line.KnockedOut ? bests.filter(Boolean).pop() : bests[quali.part - 1]) : undefined;
     rows.push({
       num,
       code: d?.Tla ?? num,
@@ -121,10 +179,11 @@ export function towerRows(state: TimingState): TowerRow[] {
       team: d?.TeamName ?? "",
       teamColour: teamColour(d),
       position: Number.isFinite(pos) ? pos : 99,
-      gap: parseGap(line.GapToLeader),
+      gap,
       interval,
       lastLap: { value: line.LastLapTime?.Value ?? "", mark: sectorMark(line.LastLapTime) },
-      bestLap: { value: line.BestLapTime?.Value ?? "", mark: "none" }, // purple assigned below
+      // In qualifying the time that counts is this part's best. Purple is assigned below.
+      bestLap: { value: (quali ? partBest || (quali.part === 1 ? line.BestLapTime?.Value : "") : line.BestLapTime?.Value) ?? "", mark: "none" },
       sectors: [0, 1, 2].map((i) => ({ value: sectors[i]?.Value ?? "", mark: sectorMark(sectors[i]) })),
       compound: normaliseCompound(stint?.Compound),
       tyreAge: typeof stint?.TotalLaps === "number" ? stint.TotalLaps : null,
@@ -137,20 +196,36 @@ export function towerRows(state: TimingState): TowerRow[] {
       stopped: !!line.Stopped,
       battle: false,
       catching: !!line.IntervalToPositionAhead?.Catching,
+      grid: Number.isInteger(grid) && grid > 0 ? grid : null,
+      gained: kind === "race" && Number.isInteger(grid) && grid > 0 && Number.isFinite(pos) && !line.Retired ? grid - pos : null,
+      fastestLap: false,
+      knockedOut: !!line.KnockedOut,
+      dropZone: false,
     });
   }
   rows.sort((a, b) => a.position - b.position);
+  // Away from a race the car on top is the reference everyone's gap is measured to.
+  if (kind !== "race" && rows[0]?.position === 1) {
+    rows[0].gap = { seconds: 0, lapsDown: 0, leader: true, raw: "" };
+    rows[0].interval = { seconds: 0, lapsDown: 0, leader: true, raw: "" };
+  }
+  if (quali?.cutoff != null) {
+    for (const r of rows) r.dropZone = !r.knockedOut && r.position > quali.cutoff && r.position < 99;
+  }
   // Fastest best lap overall gets purple.
   let fastest: TowerRow | null = null;
   let fastestMs = Infinity;
   for (const r of rows) {
-    const ms = parseLapTime(r.bestLap.value);
+    const ms = r.knockedOut ? null : parseLapTime(r.bestLap.value);
     if (ms != null && ms < fastestMs) {
       fastestMs = ms;
       fastest = r;
     }
   }
-  if (fastest) fastest.bestLap.mark = "purple";
+  if (fastest) {
+    fastest.bestLap.mark = "purple";
+    fastest.fastestLap = true;
+  }
   // A zero interval to a car ahead is a feed artefact (e.g. while pitting), not a tie.
   for (let i = 1; i < rows.length; i++) {
     if (rows[i].interval.seconds === 0 && !rows[i].interval.leader) rows[i].interval.seconds = null;
@@ -163,7 +238,7 @@ export function towerRows(state: TimingState): TowerRow[] {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const g = r.gap.seconds;
-    if (i > 0 && (r.inPit || r.pitOut) && g != null && maxAhead != null && g < maxAhead) {
+    if (i > 0 && kind === "race" && (r.inPit || r.pitOut) && g != null && maxAhead != null && g < maxAhead) {
       r.gap.seconds = null;
       r.interval.seconds = null;
       continue;
@@ -172,7 +247,7 @@ export function towerRows(state: TimingState): TowerRow[] {
   }
   // Battles: within 1.0 s of the car ahead, both racing. Under SC/VSC/red flag
   // or after the chequered flag cars can't race, so nothing is a battle.
-  if (racingAllowed(state)) {
+  if (kind === "race" && racingAllowed(state)) {
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
       const ahead = rows[i - 1];

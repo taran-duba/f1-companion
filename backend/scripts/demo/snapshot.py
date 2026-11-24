@@ -41,6 +41,7 @@ def emit_snapshot(race) -> None:
         "Stints": [{"LapFlags": 0, "Compound": c.compound, "New": "true", "TyresNotChanged": "0",
                     "TotalLaps": 0, "StartLaps": 0}]} for c in cars}})
     feed.snapshot("RaceControlMessages", {"Messages": d.rc_messages_snapshot()})
+    feed.snapshot("TeamRadio", {"Captures": []})
     rng = race.rng
     sample = {"Utc": feed.ts(0), "Cars": {c.num: {"Channels": telemetry.channels(c, 0.0, False, 0, rng)} for c in cars}}
     feed.snapshot("CarData.z", encode_z({"Entries": [sample]}))

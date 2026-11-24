@@ -19,7 +19,7 @@ export function Panel({
   const H = headingLevel === 2 ? "h2" : "h3";
   const headingId = id ? `${id}-title` : undefined;
   return (
-    <section aria-labelledby={headingId} id={id} className={`rounded-panel border border-line/70 bg-surface/80 ${className}`}>
+    <section aria-labelledby={headingId} id={id} className={`rounded-panel border border-line/70 bg-surface/95 ${className}`}>
       <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
         <H id={headingId} className="text-small font-semibold text-muted">
           {title}

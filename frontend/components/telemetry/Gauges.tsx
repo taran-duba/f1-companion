@@ -38,7 +38,7 @@ export function DrsPill({ drs }: { drs: number | null }) {
   const { label, state } = drsLabel(drs ?? 0);
   const cls =
     state === "open"
-      ? "border-ok bg-ok text-bg"
+      ? "border-ok bg-ok text-ink"
       : state === "eligible"
         ? "border-ok text-ok"
         : "border-line-strong text-faint";

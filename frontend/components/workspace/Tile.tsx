@@ -71,7 +71,7 @@ export function Tile({ tile, index, count, edit, focused, code, followedCode, dr
         }
       }}
       style={{ "--w": tile.w, "--h": tile.h, "--i": index } as CSSProperties}
-      className={`tile group/tile flex min-h-0 min-w-0 flex-col rounded-panel border bg-surface/80 transition-colors duration-300 ${focused ? "tile-focus" : ""} ${
+      className={`tile group/tile flex min-h-0 min-w-0 flex-col rounded-panel border bg-surface/95 transition-colors duration-300 ${focused ? "tile-focus" : ""} ${
         over ? "border-accent" : edit ? "border-dashed border-line-control" : "border-line/70 hover:border-line-strong"
       }`}
     >

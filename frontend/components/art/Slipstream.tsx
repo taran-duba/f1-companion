@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { buildScene, drawLines, hottest, type Scene } from "@/lib/art/slipstream";
+import { buildScene, drawLines, hottest, readPalette, type Scene } from "@/lib/art/slipstream";
 import { useArt } from "@/lib/art/useArt";
+import { useTheme } from "@/lib/theme/useTheme";
 import { useStream } from "@/lib/store";
 import { trackStatus } from "@/lib/timing";
 
@@ -32,6 +33,7 @@ interface Comet {
  */
 export function Slipstream() {
   const { art } = useArt();
+  const themeId = useTheme().theme.id;
   const { state } = useStream();
   const still = useRef<HTMLCanvasElement>(null);
   const live = useRef<HTMLCanvasElement>(null);
@@ -60,7 +62,8 @@ export function Slipstream() {
     }
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const alpha = art.mode === "bold" ? 1.4 : 0.85;
+    const alpha = art.mode === "bold" ? 1.3 : 0.6;
+    const palette = readPalette(document.documentElement);
     let scene: Scene | null = null;
     let comets: Comet[] = [];
     let drawn = 0;
@@ -88,7 +91,7 @@ export function Slipstream() {
       drawn = 0;
       started = performance.now();
       if (!animateIn) {
-        drawLines(bgCtx, scene, 0, scene.lines.length, alpha);
+        drawLines(bgCtx, scene, 0, scene.lines.length, alpha, palette);
         drawn = scene.lines.length;
       }
     };
@@ -101,7 +104,7 @@ export function Slipstream() {
         const p = Math.min(1, (now - started) / DRAW_IN_MS);
         const target = p >= 1 ? scene.lines.length : Math.floor(scene.lines.length * (1 - (1 - p) ** 3));
         if (target > drawn) {
-          drawLines(bgCtx, scene, drawn, target, alpha);
+          drawLines(bgCtx, scene, drawn, target, alpha, palette);
           drawn = target;
         }
         if (drawn >= scene.lines.length) animateIn = false;
@@ -116,7 +119,7 @@ export function Slipstream() {
       surge.current = Math.max(0, surge.current - dt * 0.6);
       const boost = 1 + surge.current * 5;
       fgCtx.save();
-      fgCtx.globalCompositeOperation = "lighter";
+      fgCtx.globalCompositeOperation = palette.light ? "multiply" : "lighter";
       fgCtx.lineCap = "round";
       for (const c of comets) {
         const ln = scene.lines[c.line];
@@ -129,7 +132,7 @@ export function Slipstream() {
           const i1 = head - k;
           if (i1 < 1) break;
           const a = (1 - k / TRAIL) ** 2 * fade * (0.5 + surge.current * 0.5) * alpha;
-          fgCtx.strokeStyle = `rgba(255,214,170,${a.toFixed(3)})`;
+          fgCtx.strokeStyle = `rgba(${palette.light ? palette.tones[0] : palette.comet},${a.toFixed(3)})`;
           fgCtx.lineWidth = ln.width * (2.2 - (k / TRAIL) * 1.4);
           fgCtx.beginPath();
           fgCtx.moveTo(ln.pts[(i1 - 1) * 2], ln.pts[(i1 - 1) * 2 + 1]);
@@ -157,7 +160,7 @@ export function Slipstream() {
       window.clearTimeout(timer);
       window.removeEventListener("resize", onResize);
     };
-  }, [art]);
+  }, [art, themeId]);
 
   const wash = TINT[tone];
   return (

@@ -10,7 +10,7 @@ const FIELD = "min-h-11 w-full rounded-chip border border-line-control bg-raised
 const BTN =
   "inline-flex min-h-11 items-center justify-center rounded-chip border border-line-control px-4 text-body font-semibold text-text transition-colors duration-150 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60";
 const BTN_PRIMARY =
-  "inline-flex min-h-11 items-center justify-center rounded-chip bg-accent px-4 text-body font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 items-center justify-center rounded-chip bg-accent px-4 text-body font-semibold text-on-accent transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
  * F1 TV sign-in: enter your F1 account email and password once and the backend swaps them for

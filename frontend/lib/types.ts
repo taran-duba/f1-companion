@@ -46,6 +46,23 @@ export interface TimingLine {
   BestLapTime?: LapTimeValue;
   LastLapTime?: LapTimeValue;
   Speeds?: Record<string, { Value?: string }>;
+  // Practice and qualifying: gaps are to the fastest lap, not the leader on track.
+  TimeDiffToFastest?: string;
+  TimeDiffToPositionAhead?: string;
+  /** Qualifying: out of the session (eliminated in an earlier part). */
+  KnockedOut?: boolean;
+  /** Qualifying: best lap per part (Q1, Q2, Q3). */
+  BestLapTimes?: LapTimeValue[] | Record<string, LapTimeValue>;
+  Stats?: { TimeDiffToFastest?: string; TimeDifftoPositionAhead?: string }[] | Record<string, { TimeDiffToFastest?: string; TimeDifftoPositionAhead?: string }>;
+}
+
+export interface TeamRadioCapture {
+  Utc?: string;
+  RacingNumber?: string;
+  /** Relative to the session's static path, e.g. "TeamRadio/MAXVER01_1_20240302_154517.mp3". */
+  Path?: string;
+  /** Demo only: what is said (the real feed has no transcripts). */
+  Text?: string;
 }
 
 export interface Stint {
@@ -125,7 +142,15 @@ export interface TimingState {
   ExtrapolatedClock?: { Utc?: string; Remaining?: string; Extrapolating?: boolean };
   Heartbeat?: { Utc?: string };
   DriverList?: Record<string, DriverInfo>;
-  TimingData?: { Lines?: Record<string, TimingLine>; Withheld?: boolean };
+  TimingData?: {
+    Lines?: Record<string, TimingLine>;
+    Withheld?: boolean;
+    /** Qualifying: 1, 2 or 3. */
+    SessionPart?: number;
+    /** Qualifying: cars taking part in each part, e.g. [22, 16, 10]. */
+    NoEntries?: number[] | Record<string, number>;
+  };
+  TeamRadio?: { Captures?: TeamRadioCapture[] | Record<string, TeamRadioCapture> };
   TimingAppData?: { Lines?: Record<string, { Stints?: Stint[] | Record<string, Stint>; GridPos?: string; Line?: number }> };
   RaceControlMessages?: { Messages?: RaceControlMessage[] | Record<string, RaceControlMessage> };
   CarData?: { Utc: string | null; Cars: Record<string, CarSample> };

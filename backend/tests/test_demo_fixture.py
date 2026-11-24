@@ -24,7 +24,7 @@ import generate_demo  # noqa: E402
 SNAPSHOT_TOPICS = {
     "SessionInfo", "SessionStatus", "TrackStatus", "WeatherData", "LapCount", "Heartbeat",
     "ExtrapolatedClock", "DriverList", "TimingData", "TimingAppData", "RaceControlMessages",
-    "CarData.z", "Position.z",
+    "TeamRadio", "CarData.z", "Position.z",
 }
 
 
@@ -170,6 +170,20 @@ def test_compressed_topics_decode(demo):
             assert len(e["Entries"]) == 20
             for p in e["Entries"].values():
                 assert abs(p["X"]) < 10000 and abs(p["Y"]) < 10000
+
+
+def test_team_radio_captures_have_clips(demo):
+    _, state = demo
+    caps = state["TeamRadio"]["Captures"]
+    assert 8 <= len(caps) <= 12
+    drivers = state["DriverList"]
+    radio_dir = FIXTURE.parent / "radio"
+    for c in caps:
+        assert c["RacingNumber"] in drivers and c["Text"] and c["Utc"].endswith("Z")
+        assert c["Path"].startswith(f"TeamRadio/{drivers[c['RacingNumber']]['Tla']}_")
+        clip = radio_dir / c["Path"].split("/", 1)[1]
+        assert clip.is_file() and 0 < clip.stat().st_size < 40_000, clip
+    assert [c["Utc"] for c in caps] == sorted(c["Utc"] for c in caps)
 
 
 def test_generator_short_race(tmp_path):

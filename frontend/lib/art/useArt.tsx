@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_ART, DENSITY_RANGE, type ArtParams } from "./slipstream";
 
 export type ArtMode = "off" | "subtle" | "bold";
@@ -42,7 +42,8 @@ const ArtContext = createContext<Ctx>({ art: DEFAULT_SETTINGS, set: () => {}, re
 /** Background art settings, saved in this browser and shared with the Status page controls. */
 export function ArtProvider({ children }: { children: ReactNode }) {
   const [art, setArt] = useState<ArtSettings>(DEFAULT_SETTINGS);
-  const loaded = useRef(false);
+  // State, not a ref: see PrefsProvider (StrictMode's second pass must not read back defaults).
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
@@ -51,17 +52,17 @@ export function ArtProvider({ children }: { children: ReactNode }) {
     } catch {
       /* storage unavailable */
     }
-    loaded.current = true;
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!loaded.current) return;
+    if (!loaded) return;
     try {
       window.localStorage.setItem(KEY, JSON.stringify(art));
     } catch {
       /* storage unavailable */
     }
-  }, [art]);
+  }, [loaded, art]);
 
   const value = useMemo<Ctx>(
     () => ({ art, set: (p) => setArt((a) => ({ ...a, ...p })), reset: () => setArt(DEFAULT_SETTINGS) }),

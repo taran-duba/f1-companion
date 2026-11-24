@@ -21,6 +21,17 @@ default" is wrong here, so the app is **dark only** (see DECISIONS.md D6).
 
 ## Color
 
+> **Themes (2026-11-23).** Surfaces, text, accent and selection are now themeable. The
+> default is **Broadcast** (carbon `#0a0b0d` / `#121418`, race red `#e10600`, white
+> selection marker); Paddock light is the first light theme, so "dark only" below no longer
+> holds. A theme is five picked colours and `frontend/lib/theme/themes.ts` derives the rest
+> (raised, lines, muted, faint, `on-accent`, `ink`), enforcing the contrast rules in this
+> section. New tokens: `on-accent` (text on an accent fill), `select` (selected row/car
+> marker, kept apart from the accent so a red accent never reads as "danger"), and `ink`
+> (dark text on bright fills such as flag pills and tyre bars). Status, sector, tyre and flag
+> colours are not themeable; light themes swap in deeper shades of the same hues. The hex
+> tables below describe the original blue-black scheme, now the **Night race** theme.
+
 Base palette follows the skill's *Digital Signage / Kiosk* dark scheme (high contrast for
 distance reading), tuned toward blue-black so team colours and sector colours pop.
 

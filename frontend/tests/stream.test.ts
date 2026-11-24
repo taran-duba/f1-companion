@@ -150,3 +150,67 @@ describe("TimingStream", () => {
     expect(t.stream.snapshot.connection).toBe("closed");
   });
 });
+
+describe("TimingStream TV delay", () => {
+  let t: ReturnType<typeof setup>;
+  const live = { source: { kind: "live", state: "connected" } };
+  const demo = { source: { kind: "demo", state: "playing" } };
+  beforeEach(() => {
+    t = setup();
+  });
+
+  it("holds a live feed back by the delay, in order", () => {
+    t.stream.setDelay(10_000);
+    t.stream.start();
+    t.es().emit("status", live);
+    t.es().emit("snapshot", snap(1, { LapCount: { CurrentLap: 3 } }));
+    expect(t.stream.snapshot.connection).toBe("open");
+    expect(t.stream.snapshot.state).toBeNull();
+    expect(t.stream.snapshot.pendingUntil).toBe(1_000_000 + 10_000);
+    t.advance(4_000);
+    t.es().emit("patch", { seq: 2, changes: { LapCount: { CurrentLap: 4 } } });
+    t.advance(6_000);
+    t.timers.splice(0, t.timers.length - 1); // only the newest drain timer is live
+    t.fireTimer(); // snapshot due
+    expect(t.stream.snapshot.state?.LapCount).toEqual({ CurrentLap: 3 });
+    expect(t.stream.snapshot.pendingUntil).toBeNull();
+    t.advance(4_000);
+    t.fireTimer(); // patch due
+    expect(t.stream.snapshot.state?.LapCount).toEqual({ CurrentLap: 4 });
+  });
+
+  it("does not delay a replay, and catches up when the delay shrinks", () => {
+    t.stream.setDelay(10_000);
+    t.stream.start();
+    t.es().emit("status", demo);
+    t.es().emit("snapshot", snap(1, { A: 1 }));
+    expect(t.stream.snapshot.state).toEqual({ A: 1 });
+    expect(t.stream.snapshot.delayMs).toBe(0);
+
+    t.es().emit("status", live);
+    expect(t.stream.snapshot.delayMs).toBe(10_000);
+    t.es().emit("patch", { seq: 2, changes: { A: 2 } });
+    expect(t.stream.snapshot.state).toEqual({ A: 1 });
+    t.advance(3_000);
+    t.stream.setDelay(2_000); // the patch is now 3 s old: due
+    expect(t.stream.snapshot.state).toEqual({ A: 2 });
+  });
+
+  it("keeps showing held data across a reconnect until the new snapshot is due", () => {
+    t.stream.setDelay(5_000);
+    t.stream.start();
+    t.es().emit("status", live);
+    t.es().emit("snapshot", snap(1, { A: 1 }));
+    t.advance(5_000);
+    t.fireTimer();
+    expect(t.stream.snapshot.state).toEqual({ A: 1 });
+    t.es().fail();
+    t.fireTimer(); // reconnect
+    t.es().emit("status", live);
+    t.es().emit("snapshot", snap(1, { A: 9 }));
+    expect(t.stream.snapshot.state).toEqual({ A: 1 });
+    t.advance(5_000);
+    t.fireTimer();
+    expect(t.stream.snapshot.state).toEqual({ A: 9 });
+  });
+});

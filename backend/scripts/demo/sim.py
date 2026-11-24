@@ -12,6 +12,7 @@ from . import roster, strategy, telemetry
 from .cars import Car, SafetyCar
 from .director import START_T, Director
 from .feed import Feed
+from .radio import Radio
 from .timing import Timing
 from .track import PIT_SPEED, V_MAX, Track, _accel
 
@@ -55,6 +56,7 @@ class Race:
         self.samples: list[dict] = []
         self.stats = {"overtakes": 0, "pit_stops": 0, "events": []}
         self.director = Director(self)
+        self.radio = Radio(self)
 
     # -- small helpers ----------------------------------------------------
     def phys(self, a, b) -> float:
@@ -364,7 +366,10 @@ class Race:
         i = g % tr.ntp
         in_pit = c.pit_phase is not None
         slow = self.sc is not None or self.vsc or in_pit or c.pit_out_flag or c.outlap
+        best = self.timing.best_lap
         lap_time = self.timing.on_tp(c, g, tc, in_pit, slow)
+        if self.timing.best_lap < best:
+            self.radio.on_fastest_lap(t, c)
         if c.pit_out_flag and tr.tp_sector[i] == 0 and i == tr.seg_counts[0] - 1:
             c.pit_out_flag = False
             self.feed.line("TimingData", c.num, {"PitOut": False})
@@ -387,6 +392,7 @@ class Race:
                 self.chequered = True
                 self.note(t, f"chequered flag, winner {c.num}")
                 self.director.on_chequered(t)
+                self.radio.on_chequered(t, c)
             self.director.on_leader_lap(t, c.laps_done)
         if self.chequered:
             c.finished = True
@@ -399,6 +405,7 @@ class Race:
         c.k = self.track.ref_lap_time / target
         if c.want_pit is None and c.pit_phase is None:
             c.want_pit = strategy.decide_at_line(c, self.total, self.w, self.raining, self.rng)
+            self.radio.on_pit_call(t, c, c.want_pit, c.compound)
 
     # -- classification -------------------------------------------------
     def _rank_key(self, c: Car):

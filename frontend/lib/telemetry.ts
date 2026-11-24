@@ -85,11 +85,12 @@ export function fromWindow(win: TelemetryWindow | null | undefined, anchorMs: nu
  * server, which may be a push or two ahead of what this page has. The live samples we
  * already hold are exact (CarData.Utc), so find the newest one inside the window by its
  * values and line the window up on it. Falls back to `fallback` (the newest feed time).
+ * With a TV delay the page runs `delay` behind the server, so pass a wider `matchS`.
  */
-export function anchorWindow(win: TelemetryWindow | null | undefined, live: TelSample[], fallback: number | null): number | null {
+export function anchorWindow(win: TelemetryWindow | null | undefined, live: TelSample[], fallback: number | null, matchS = MATCH_S): number | null {
   const last = live[live.length - 1];
   if (!last || !win || !Array.isArray(win.t)) return fallback;
-  for (let i = win.t.length - 1; i >= 0 && num(win.t[i]) >= -MATCH_S; i--) {
+  for (let i = win.t.length - 1; i >= 0 && num(win.t[i]) >= -matchS; i--) {
     const row = toSample(
       { speed: win.speed?.[i], throttle: win.throttle?.[i], brake: win.brake?.[i], gear: win.gear?.[i], rpm: win.rpm?.[i], drs: win.drs?.[i] },
       0,

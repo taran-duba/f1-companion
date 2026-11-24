@@ -6,7 +6,7 @@ import type { ServerStatus } from "@/lib/types";
 import { F1TvAccount } from "./F1TvAccount";
 
 const BTN_PRIMARY =
-  "inline-flex min-h-11 items-center justify-center rounded-chip bg-accent px-4 text-body font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 items-center justify-center rounded-chip bg-accent px-4 text-body font-semibold text-on-accent transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
 
 /** Live timing: switch to it, sign in to F1 TV for telemetry, optionally record. */
 export function LiveTab({ status }: { status: ServerStatus | null }) {

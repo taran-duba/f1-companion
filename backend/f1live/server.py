@@ -24,10 +24,10 @@ from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import credentials, f1auth
+from . import credentials, f1auth, radio
 from .manager import DEMO_PATH, SourceManager, list_recordings
 from .state import StateStore
 
@@ -197,6 +197,7 @@ def create_app(initial_source: str | None = None) -> FastAPI:
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST", "DELETE"],
                        allow_headers=["Content-Type"])
     app.state.store, app.state.manager, app.state.hub = store, manager, hub
+    app.state.radio = radio.RadioFetcher()
 
     @app.get("/api/health")
     async def health() -> dict:
@@ -321,6 +322,15 @@ def create_app(initial_source: str | None = None) -> FastAPI:
         if not num.isdigit() or len(num) > 3:
             raise HTTPException(400, "invalid driver number")
         return store.traces(num)
+
+    @app.get("/api/radio")
+    async def team_radio(path: str = "") -> Response:
+        """Audio for a ``TeamRadio`` capture's ``Path`` (see :mod:`f1live.radio`)."""
+        try:
+            data, ctype = await app.state.radio.get(path, manager.source, store.topics.get("SessionInfo"))
+        except radio.RadioError as exc:
+            raise HTTPException(exc.status, exc.detail) from exc
+        return Response(data, media_type=ctype, headers={"Cache-Control": "private, max-age=86400"})
 
     @app.get("/api/stream")
     async def stream(request: Request) -> StreamingResponse:

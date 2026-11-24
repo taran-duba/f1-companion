@@ -44,6 +44,33 @@ For a production build of the dashboard: `cd frontend && npm run build && npm st
 Keyboard on the live page: Tab into the timing tower, then ↑/↓ or j/k move the selected
 driver; Home/End jump to the leader/last car.
 
+### Making it yours (Settings)
+
+Everything here is saved in the browser (localStorage), per device.
+
+- **Themes.** Broadcast (default: carbon and race red), Paddock light, Night race, Ember and
+  seven team-livery-inspired themes. The palette button in the top bar switches them and
+  turns the background art off / subtle / bold. **Make your own** picks five colours (page,
+  panels, text, accent, selection) and previews them on the whole app; everything else is
+  derived (`frontend/lib/theme/themes.ts`) and nudged to stay readable, with contrast checks
+  shown. Tyre, sector and flag colours keep their meaning in every theme (deeper shades on a
+  light page).
+- **Favourites.** Star drivers or whole teams (Settings, the star next to "Following", or a
+  driver page). Their rows carry the team colour in the tower, they're followed first when a
+  session starts, and they decide who "favourites" alerts are about.
+- **TV delay.** While the source is live, hold everything back N seconds (0–300) so the tower,
+  flags, radio and alerts line up with your broadcast instead of spoiling it. The "Sync" chip
+  appears in the top bar in live mode. Replays are never delayed.
+- **Alerts.** Overtakes, pit stops (with the tyre change), fastest lap, flags and safety cars,
+  stewards' decisions, retirements and team radio, each set to off / favourites / everyone.
+- **Tower.** Click the Interval header to swap between interval and gap to the leader. A ±
+  column shows places gained since the start, and the fastest-lap holder gets an FL badge.
+  In qualifying the tower shows Q1/Q2/Q3, a cut line, the drop zone and who's out.
+- **Team radio.** A Team radio tile (in the Pit wall layout) and radio alerts with a play
+  button. Clips come through the backend (`GET /api/radio?path=TeamRadio/…`): from
+  `data/demo/radio/` for the demo, or F1's static archive for live sessions (sent with your
+  F1 TV token when one is set). The demo's clips are synthetic voices reading invented lines.
+
 To regenerate the demo fixture: `.venv/bin/python backend/scripts/generate_demo.py`
 (`--seed`, `--laps`, `--out`).
 

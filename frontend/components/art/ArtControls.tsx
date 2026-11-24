@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { buildScene, DENSITY_RANGE, drawLines } from "@/lib/art/slipstream";
+import { buildScene, DENSITY_RANGE, drawLines, readPalette } from "@/lib/art/slipstream";
 import { useArt, type ArtMode } from "@/lib/art/useArt";
+import { useTheme } from "@/lib/theme/useTheme";
 
 const BTN =
   "inline-flex min-h-11 items-center justify-center rounded-chip border border-line-control px-3 text-small font-semibold text-text transition-colors duration-150 hover:bg-raised";
@@ -12,15 +13,16 @@ const MODES: { id: ArtMode; label: string }[] = [
   { id: "bold", label: "Bold" },
 ];
 
-/** Paint a scene on a dark ground (preview and PNG export share this). */
+/** Paint a scene on the theme's page colour (preview and PNG export share this). */
 function paint(canvas: HTMLCanvasElement, seed: number, density: number, wander: number, tightness: number, alpha: number) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+  const root = document.documentElement;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = "#0e0b0d";
+  ctx.fillStyle = getComputedStyle(root).getPropertyValue("--color-bg").trim() || "#0a0b0d";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const scene = buildScene({ seed, density, wander, tightness }, canvas.width, canvas.height);
-  drawLines(ctx, scene, 0, scene.lines.length, alpha);
+  drawLines(ctx, scene, 0, scene.lines.length, alpha, readPalette(root));
 }
 
 function Slider({ id, label, min, max, step, value, onChange, hint }: { id: string; label: string; min: number; max: number; step: number; value: number; onChange: (v: number) => void; hint: string }) {
@@ -55,6 +57,7 @@ function Slider({ id, label, min, max, step, value, onChange, hint }: { id: stri
 /** Pick the background: mode, seed, and the three things the algorithm lets you shape. */
 export function ArtControls() {
   const { art, set, reset } = useArt();
+  const themeId = useTheme().theme.id;
   const preview = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export function ArtControls() {
     if (!c) return;
     const id = window.setTimeout(() => paint(c, art.seed, art.density, art.wander, art.tightness, 0.9), 60);
     return () => window.clearTimeout(id);
-  }, [art.seed, art.density, art.wander, art.tightness]);
+  }, [art.seed, art.density, art.wander, art.tightness, themeId]);
 
   function download() {
     const c = document.createElement("canvas");
@@ -122,7 +125,7 @@ export function ArtControls() {
               aria-pressed={art.mode === m.id}
               onClick={() => set({ mode: m.id })}
               className={`min-h-11 rounded-chip text-small font-semibold transition-[background-color,color] duration-200 ${
-                art.mode === m.id ? "bg-accent text-bg" : "text-muted hover:text-text"
+                art.mode === m.id ? "bg-accent text-on-accent" : "text-muted hover:text-text"
               }`}
             >
               {m.label}

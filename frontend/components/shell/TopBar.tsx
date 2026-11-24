@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { DelayControl } from "@/components/settings/DelayControl";
+import { usePrefs } from "@/lib/prefs";
+import { useStream } from "@/lib/store";
 import { useWorkspace } from "@/lib/useWorkspace";
+import { Popover } from "./Popover";
 import { SourceChip } from "./SourceChip";
+import { ThemeMenu } from "./ThemeMenu";
 
 const LINK =
   "flex min-h-11 items-center whitespace-nowrap rounded-full px-4 text-body transition-[color,background-color] duration-200 hover:bg-raised/70 hover:text-text lg:min-h-10";
@@ -58,7 +63,7 @@ export function TopBar() {
         <nav aria-label="Pages" className="ml-auto flex gap-1">
           {[
             { href: "/driver", label: "Drivers" },
-            { href: "/settings", label: "Status" },
+            { href: "/settings", label: "Settings" },
           ].map((p) => {
             const on = pathname.startsWith(p.href);
             return (
@@ -73,8 +78,40 @@ export function TopBar() {
             );
           })}
         </nav>
+        <DelayChip />
+        <ThemeMenu />
         <SourceChip />
       </div>
     </header>
+  );
+}
+
+/** "TV +30 s": shown while the source is live (or a delay is set), opens the delay control. */
+function DelayChip() {
+  const { status } = useStream();
+  const { delaySec } = usePrefs().prefs;
+  if (status?.source.kind !== "live") return null;
+  return (
+    <Popover
+      label="TV delay"
+      buttonClass={`flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-small font-semibold transition-colors duration-150 hover:bg-raised/70 lg:min-h-10 ${delaySec ? "text-text" : "text-muted"}`}
+      panelClass="w-[min(26rem,calc(100vw-1.5rem))]"
+      button={
+        <>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="1.5" y="3" width="13" height="9" rx="1.5" />
+            <path d="M5.5 14.5h5" strokeLinecap="round" />
+          </svg>
+          <span className="num">{delaySec ? `+${delaySec} s` : "Sync"}</span>
+        </>
+      }
+    >
+      {() => (
+        <div className="grid gap-2">
+          <p className="text-small font-semibold text-text">Match your TV</p>
+          <DelayControl compact />
+        </div>
+      )}
+    </Popover>
   );
 }

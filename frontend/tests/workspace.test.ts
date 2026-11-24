@@ -54,7 +54,7 @@ describe("workspace operations", () => {
     ws = addLayout(ws);
     const custom = activeLayout(ws);
     expect(custom.preset).toBeUndefined();
-    expect(custom.tiles.map((t) => t.type)).toEqual(["pits", "strategy"]);
+    expect(custom.tiles.map((t) => t.type)).toEqual(["pits", "strategy", "radio"]);
     expect(custom.tiles[0].id).not.toBe(ws.layouts.find((l) => l.id === "pit")!.tiles[0].id);
     ws = renameLayout(ws, custom.id, "  Quali  ");
     expect(activeLayout(ws).name).toBe("Quali");

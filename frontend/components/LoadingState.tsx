@@ -25,7 +25,7 @@ export function LoadingState() {
             <button
               type="button"
               onClick={() => stream?.reconnectNow()}
-              className="min-h-11 rounded-chip bg-accent px-4 font-semibold text-bg hover:bg-accent/90"
+              className="min-h-11 rounded-chip bg-accent px-4 font-semibold text-on-accent hover:bg-accent/90"
             >
               Retry now
             </button>

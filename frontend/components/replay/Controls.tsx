@@ -13,7 +13,7 @@ export function PlayButton({ state, disabled, onClick, compact = false }: { stat
       onClick={onClick}
       disabled={disabled}
       aria-label={`${label} replay`}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 bg-accent font-semibold text-bg transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none ${compact ? "size-11 rounded-full" : "min-w-28 rounded-chip px-4 text-body"}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 bg-accent font-semibold text-on-accent transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none ${compact ? "size-11 rounded-full" : "min-w-28 rounded-chip px-4 text-body"}`}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
         {playing ? (

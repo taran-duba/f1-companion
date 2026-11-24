@@ -38,7 +38,7 @@ DEFAULT_BASE_URL = "https://livetiming.formula1.com"
 DEFAULT_TOPICS: tuple[str, ...] = (
     "Heartbeat", "CarData.z", "Position.z", "ExtrapolatedClock", "TimingStats", "TimingAppData",
     "WeatherData", "TrackStatus", "DriverList", "RaceControlMessages", "SessionInfo", "SessionData",
-    "LapCount", "TimingData", "SessionStatus",
+    "LapCount", "TimingData", "SessionStatus", "TeamRadio",
 )
 TELEMETRY_TOPICS = ("CarData.z", "Position.z")
 # Applied first so consumers (and the recorder's file name) see them early.

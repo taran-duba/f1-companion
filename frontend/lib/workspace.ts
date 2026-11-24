@@ -17,7 +17,8 @@ export type WidgetType =
   | "traces"
   | "sectors"
   | "weather"
-  | "battles";
+  | "battles"
+  | "radio";
 
 /** Who a tile is about: the followed driver, someone relative to them, or a fixed car. */
 export type DriverRef = "follow" | "ahead" | "behind" | "leader" | `#${string}`;
@@ -44,10 +45,11 @@ export const WIDGETS: Record<WidgetType, WidgetInfo> = {
   sectors: { title: "Sector times", blurb: "Lap-by-lap sector splits for one driver.", driver: true, w: 5, h: 8 },
   weather: { title: "Weather", blurb: "Air and track temperature, humidity, wind and rain.", driver: false, w: 3, h: 4 },
   battles: { title: "Battles", blurb: "Pairs of cars within a second of each other.", driver: false, w: 4, h: 5 },
+  radio: { title: "Team radio", blurb: "Radio clips from the pit wall, newest first, ready to play.", driver: false, w: 4, h: 6 },
 };
 
 export const WIDGET_ORDER: WidgetType[] = [
-  "tower", "telemetry", "map", "pits", "strategy", "gaps", "laps", "traces", "sectors", "battles", "control", "weather",
+  "tower", "telemetry", "map", "pits", "strategy", "gaps", "laps", "traces", "sectors", "battles", "control", "radio", "weather",
 ];
 
 export const W_STEPS = [3, 4, 5, 6, 7, 8, 9, 12] as const;
@@ -112,8 +114,9 @@ const PRESET_TILES: Record<PresetKey, () => Tile[]> = {
     tile("telemetry", { w: 4, h: 12, driver: "behind" }),
   ],
   pit: () => [
-    tile("pits", { w: 5, h: 12 }),
+    tile("pits", { w: 5, h: 6 }),
     tile("strategy", { w: 7, h: 12 }),
+    tile("radio", { w: 5, h: 6 }),
   ],
   analysis: () => [
     tile("tower", { w: 4 }),

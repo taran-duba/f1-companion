@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { FavouriteStar } from "@/components/FavouriteStar";
 import { Chip, MarkedTime, TeamBar, TyreBadge, tyreName } from "@/components/timing/Atoms";
 import type { TowerRow } from "@/lib/timing";
 import { GapText } from "./DriverCard";
@@ -19,8 +20,12 @@ export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRo
         </div>
       </nav>
 
-      <div className="flex items-stretch gap-3">
-        <TeamBar colour={row.teamColour} className="h-auto min-h-16" />
+      {/* The team's colour washes in behind the name, like a broadcast driver card. */}
+      <div
+        className="-mx-1 flex items-stretch gap-3 rounded-panel px-1 py-1"
+        style={{ backgroundImage: `linear-gradient(90deg, color-mix(in srgb, ${row.teamColour} 22%, transparent), transparent 60%)` }}
+      >
+        <TeamBar colour={row.teamColour} className="h-auto min-h-16 !w-1.5" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="num text-headline font-bold">
@@ -37,6 +42,8 @@ export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRo
             </span>
             <h1 className="text-headline font-bold tracking-wide">{row.code}</h1>
             <span className="min-w-0 truncate text-title font-semibold">{row.name}</span>
+            <FavouriteStar code={row.code} className="-my-2 self-center" />
+            {row.fastestLap && <Chip tone="muted" title="Fastest lap of the session">Fastest lap</Chip>}
             {row.inPit && <Chip tone="warn">In pit</Chip>}
             {row.pitOut && !row.inPit && <Chip tone="warn">Out lap</Chip>}
             {/* "DNF" as in the tower, cards and strategy chart; the title spells it out. */}
@@ -63,6 +70,18 @@ export function DriverHeader({ row, prev, next }: { row: TowerRow; prev: TowerRo
             )}
           </span>
         </Stat>
+        {row.grid != null && (
+          <Stat label="Started">
+            <span className="num">
+              P{row.grid}
+              {row.gained ? (
+                <span className={`ml-2 text-small font-semibold ${row.gained > 0 ? "text-ok" : "text-danger"}`}>
+                  {row.gained > 0 ? `▲ ${row.gained} gained` : `▼ ${-row.gained} lost`}
+                </span>
+              ) : null}
+            </span>
+          </Stat>
+        )}
         <Stat label="Pit stops">
           <span className="num">{row.pits}</span>
         </Stat>

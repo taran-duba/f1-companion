@@ -14,6 +14,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { LoadingState } from "@/components/LoadingState";
 import { SessionStrip } from "@/components/shell/SessionStrip";
+import { FavouriteStar } from "@/components/FavouriteStar";
+import { isFavourite, usePrefs } from "@/lib/prefs";
 import { useSelection } from "@/lib/selection";
 import { useStream } from "@/lib/store";
 import { towerRows } from "@/lib/timing";
@@ -39,6 +41,7 @@ export function Workspace() {
   const { selected, select } = useSelection();
   const ws = useWorkspace();
   const { openSources } = useUi();
+  const { prefs } = usePrefs();
   const [edit, setEdit] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -48,12 +51,12 @@ export function Workspace() {
   const rows = useMemo(() => (state ? towerRows(state) : []), [state]);
   const drivers = useMemo(() => rows.map((r) => ({ num: r.num, code: r.code, name: r.name })), [rows]);
 
-  // Default selection: the leader, once timing arrives.
+  // Default selection: your first favourite in the session, else the leader, once timing arrives.
   useEffect(() => {
     if (!state || selected) return;
-    const first = rows[0];
+    const first = rows.find((r) => isFavourite(prefs, r.code, r.team)) ?? rows[0];
     if (first) select(first.num);
-  }, [state, selected, select, rows]);
+  }, [state, selected, select, rows, prefs]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -92,11 +95,13 @@ export function Workspace() {
                 {!selected && <option value="">No driver</option>}
                 {drivers.map((d) => (
                   <option key={d.num} value={d.num}>
+                    {isFavourite(prefs, d.code) ? "★ " : ""}
                     {d.code} {d.name}
                   </option>
                 ))}
               </select>
             </label>
+            {followedCode && <FavouriteStar code={followedCode} />}
             <button type="button" className={`${BTN} border-transparent ${edit ? "!border-accent text-accent" : "text-muted hover:text-text"}`} aria-pressed={edit} onClick={() => { setEdit((e) => !e); setFocusId(null); setAdding(false); }}>
               {edit ? "Done" : "Customize"}
             </button>
@@ -154,7 +159,7 @@ export function Workspace() {
           <h2 className="text-title font-bold">Choose what to watch</h2>
           <p className="mt-1 max-w-[65ch] text-small text-muted">Nothing is feeding the dashboard yet. The demo race works with no setup; live timing needs a running session.</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" className={`${BTN} bg-accent text-bg hover:bg-accent/90`} onClick={() => openSources("replay")}>
+            <button type="button" className={`${BTN} bg-accent text-on-accent hover:bg-accent/90`} onClick={() => openSources("replay")}>
               Play the demo or a replay
             </button>
             <button type="button" className={BTN} onClick={() => openSources("live")}>

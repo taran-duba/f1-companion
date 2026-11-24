@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useFitHeight } from "@/lib/fit";
+import { isFavourite, usePrefs } from "@/lib/prefs";
 import { useStream } from "@/lib/store";
-import { formatGap, towerRows, type TowerRow } from "@/lib/timing";
+import { formatGap, knockedOutIn, qualiPart, sessionKind, towerRows, type QualiPart, type SessionKind, type TowerRow } from "@/lib/timing";
 import type { TimingState } from "@/lib/types";
 import { OpenSources } from "../sources/OpenSources";
 import { Chip, Diamond, MarkedTime, TeamBar, TyreBadge } from "./Atoms";
+import { usePositionMoves, useRowGlide } from "./towerHooks";
 
 interface Props {
   state: TimingState;
@@ -17,46 +19,63 @@ interface Props {
   compact?: boolean;
 }
 
+type GapMode = "interval" | "leader";
+
 /**
  * Columns hide progressively (DESIGN_SYSTEM data-density rule 3), driven by
  * the tower's own width (container queries), not the viewport: the tower
  * shares the screen with other panels, so viewport breakpoints lie.
- * always: pos, driver, interval, last lap, tyre (fits 328px)
- * ≥ 440px: + gap · ≥ 560px: + best, pits · ≥ 790px: + sectors
+ * always: pos, driver, main gap (interval or leader, your pick), main time, tyre (fits 328px)
+ * ≥ 400px: + places gained since the start (races) · ≥ 520px: + the other gap
+ * ≥ 600px: + the other time, pits · ≥ 720px: + team name · ≥ 835px: + sectors
  * Every column but Driver has a fixed width, sized for its widest value (battle outline,
  * a marked time, a two-digit tyre age): with auto widths, columns jumped sideways whenever
  * a gap or lap time changed length or a sector cleared. Driver takes the spare width, so its
- * chips (PIT, OUT, DNF) appear without moving anything. Times use 8px right padding at
- * every size; 12px (lg:pr-3) left the desktop tower no room to reserve those widths.
+ * chips (PIT, OUT, DNF, FL) appear without moving anything.
  */
 const W = {
   interval: "w-[4.75rem] lg:w-[5.25rem]",
-  gap: "w-[4.25rem] lg:w-[4.375rem]",
-  last: "w-[5.75rem] lg:w-[6.125rem]",
-  best: "w-[5.25rem] lg:w-[5.375rem]",
+  gap: "w-[4.75rem] lg:w-[5.25rem]",
+  gained: "w-9",
+  time: "w-[5.75rem] lg:w-[6.125rem]",
+  time2: "w-[5.25rem] lg:w-[5.375rem]",
   sector: "w-[4.75rem]",
   tyre: "w-10 @min-[360px]:w-14 @min-[560px]:w-16",
   pits: "w-8",
 };
 
 const COL = {
-  gap: "hidden @min-[440px]:table-cell",
-  best: "hidden @min-[560px]:table-cell",
+  gained: "hidden @min-[400px]:table-cell",
+  second: "hidden @min-[520px]:table-cell",
+  time2: "hidden @min-[600px]:table-cell",
+  pits: "hidden @min-[600px]:table-cell",
   sectors: "hidden @min-[835px]:table-cell",
-  pits: "hidden @min-[560px]:table-cell",
+  team: "hidden @min-[720px]:inline",
   age: "hidden @min-[380px]:inline",
+};
+
+const GAP_LABEL: Record<SessionKind, Record<GapMode, { short: string; long: string }>> = {
+  race: { interval: { short: "Interval", long: "gap to the car ahead" }, leader: { short: "Leader", long: "gap to the leader" } },
+  quali: { interval: { short: "Interval", long: "gap to the car ahead" }, leader: { short: "Gap", long: "gap to the fastest lap" } },
+  practice: { interval: { short: "Interval", long: "gap to the car ahead" }, leader: { short: "Gap", long: "gap to the fastest lap" } },
 };
 
 export function TimingTower({ state, selected, onSelect, compact = false }: Props) {
   const { generation } = useStream();
+  const { prefs, set } = usePrefs();
   const [fitRef, avail] = useFitHeight();
   const rows = useMemo(() => towerRows(state), [state]);
+  const kind = sessionKind(state);
+  const quali = qualiPart(state);
   const moves = usePositionMoves(rows, generation);
   const table = useRef<HTMLTableElement>(null);
   useRowGlide(table, rows, generation);
   const lap = state.LapCount?.CurrentLap;
   // Roving focus: one tab stop for the whole tower (the selected row), arrows move within it.
   const focusNum = rows.some((r) => r.num === selected) ? selected : rows[0]?.num;
+  const main: GapMode = prefs.towerGap;
+  const other: GapMode = main === "interval" ? "leader" : "interval";
+  const race = kind === "race";
 
   /** ↑/↓ (and j/k), Home/End move focus and selection together, starting from the focused row. */
   function onKeyDown(e: React.KeyboardEvent<HTMLTableElement>) {
@@ -87,14 +106,16 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
   }
 
   const c = (cls: string) => (compact ? "hidden" : cls);
+  const head = GAP_LABEL[kind];
   // In fit mode the rows share the tile's height (20 cars on one screen), never scrolling.
   const rowH = avail != null && rows.length ? Math.max(16, Math.min(36, Math.floor((avail - 2) / rows.length))) : null;
   return (
     <div ref={fitRef} className={`@container ${avail != null ? "h-full overflow-hidden" : "overflow-x-auto"}`}>
+      {quali && <QualiBar q={quali} cars={rows.filter((r) => !r.knockedOut).length} />}
       <table ref={table} className="w-full border-collapse text-[0.9375rem] @max-[340px]:text-[0.875rem] @min-[400px]:text-body lg:text-row" onKeyDown={onKeyDown}>
         <caption className="sr-only">
-          Timing tower{lap ? `, lap ${lap}` : ""}. Select a driver to show their telemetry; up and down arrows move between
-          drivers.
+          Timing tower{lap ? `, lap ${lap}` : ""}{quali ? `, ${quali.label}` : ""}. Select a driver to show their telemetry; up and down arrows
+          move between drivers.
         </caption>
         <thead data-fit-reserve>
           <tr className="border-b border-line-strong text-left text-small font-semibold text-muted">
@@ -104,17 +125,35 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <th scope="col" className="py-1 pl-1">
               Driver
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${W.interval}`}>
-              Interval
+            <th scope="col" className={`py-0.5 pr-1 text-right ${W.interval}`}>
+              <button
+                type="button"
+                onClick={() => set({ towerGap: other })}
+                title={`Showing the ${head[main].long}. Switch to the ${head[other].long}.`}
+                aria-label={`${head[main].short}: showing the ${head[main].long}. Switch to the ${head[other].long}`}
+                className="-my-1 inline-flex min-h-7 items-center gap-1 rounded-chip px-1 text-muted underline decoration-line-control decoration-dotted underline-offset-4 transition-colors duration-150 hover:bg-raised hover:text-text"
+              >
+                {head[main].short}
+                <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="shrink-0">
+                  <path d="M1 3h7M6 1l2 2-2 2M9 7H2M4 5L2 7l2 2" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${W.gap} ${c(COL.gap)}`}>
-              Gap
+            {race && (
+              <th scope="col" className={`py-1 pr-1 text-right ${W.gained} ${c(COL.gained)}`}>
+                <abbr title="Places gained or lost since the start" className="no-underline">
+                  ±
+                </abbr>
+              </th>
+            )}
+            <th scope="col" className={`py-1 pr-2 text-right ${W.gap} ${c(COL.second)}`}>
+              {head[other].short}
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${W.last}`}>
-              Last lap
+            <th scope="col" className={`py-1 pr-2 text-right ${W.time}`}>
+              {race ? "Last lap" : "Best"}
             </th>
-            <th scope="col" className={`py-1 pr-2 text-right ${W.best} ${c(COL.best)}`}>
-              Best
+            <th scope="col" className={`py-1 pr-2 text-right ${W.time2} ${c(COL.time2)}`}>
+              {race ? "Best" : "Last"}
             </th>
             <th scope="col" className={`py-1 pr-2 text-right ${W.sector} ${c(COL.sectors)}`}>
               S1
@@ -128,11 +167,13 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <th scope="col" className={`py-1 pr-2 @min-[560px]:pl-2 ${compact ? "w-14 @min-[560px]:w-16" : W.tyre}`}>
               Tyre
             </th>
-            <th scope="col" className={`py-1 pr-1 text-right ${W.pits} ${c(COL.pits)}`}>
-              <abbr title="Pit stops" className="no-underline">
-                Pits
-              </abbr>
-            </th>
+            {race && (
+              <th scope="col" className={`py-1 pr-1 text-right ${W.pits} ${c(COL.pits)}`}>
+                <abbr title="Pit stops" className="no-underline">
+                  Pits
+                </abbr>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className={rowH != null ? "[&_*]:!leading-none" : ""}>
@@ -140,6 +181,10 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
             <Row
               key={r.num}
               row={r}
+              kind={kind}
+              quali={quali}
+              main={main}
+              fav={isFavourite(prefs, r.code, r.team)}
               selected={r.num === selected}
               focusable={r.num === focusNum}
               move={moves[r.num] ?? 0}
@@ -150,13 +195,17 @@ export function TimingTower({ state, selected, onSelect, compact = false }: Prop
           ))}
         </tbody>
       </table>
-      <Legend compact={compact} fit={avail != null} />
+      <Legend compact={compact} fit={avail != null} kind={kind} quali={quali} />
     </div>
   );
 }
 
 const Row = memo(function Row({
   row: r,
+  kind,
+  quali,
+  main,
+  fav,
   selected,
   focusable,
   move,
@@ -165,6 +214,10 @@ const Row = memo(function Row({
   rowH,
 }: {
   row: TowerRow;
+  kind: SessionKind;
+  quali: QualiPart | null;
+  main: GapMode;
+  fav: boolean;
   selected: boolean;
   focusable: boolean;
   move: number;
@@ -174,22 +227,38 @@ const Row = memo(function Row({
 }) {
   const dense = rowH != null && rowH < 28;
   const c = (cls: string) => (compact ? "hidden" : cls);
+  const race = kind === "race";
   const out = r.retired || r.stopped;
-  const chip = out ? (r.retired ? "DNF" : "STOP") : r.inPit ? "PIT" : r.pitOut ? "OUT" : null;
+  const dim = out || r.knockedOut;
+  // A knocked-out car sitting in the garage is "out in Q1", not news about the pit lane.
+  const chip = out ? (r.retired ? "DNF" : "STOP") : r.knockedOut ? null : r.inPit ? "PIT" : r.pitOut ? "OUT" : null;
+  const qOut = quali && r.knockedOut ? `${quali.label.replace(/\d$/, "")}${knockedOutIn(r.position, quali)}` : null;
+  const cut = quali?.cutoff != null && r.position === quali.cutoff;
+  // Selection marker on the left, the qualifying cut line along the bottom.
+  const shadows = [selected && "inset 3px 0 0 var(--color-select)", cut && "inset 0 -2px 0 var(--color-danger)"].filter(Boolean).join(", ");
+  const style: CSSProperties = {
+    ...(rowH != null ? { height: rowH } : {}),
+    ...(shadows ? { boxShadow: shadows } : {}),
+    // A favourite carries its team colour into the row, fading out behind the name.
+    ...(fav && !dim ? { backgroundImage: `linear-gradient(90deg, color-mix(in srgb, ${r.teamColour} 24%, transparent), transparent 42%)` } : {}),
+  };
+  const time = race ? r.lastLap : r.bestLap;
+  const time2 = race ? r.bestLap : r.lastLap;
   return (
     <tr
       data-row={r.num}
-      style={rowH != null ? { height: rowH } : undefined}
+      style={style}
       onClick={() => onSelect(r.num)}
       className={`h-11 cursor-pointer border-b border-line transition-colors duration-150 lg:h-8 ${
         // Hover is lighter than selection so pointing at a row never reads as selecting it.
-        selected ? "bg-raised shadow-[inset_3px_0_0_var(--color-accent)]" : "hover:bg-raised/50"
-      } ${out ? "text-muted" : ""}`}
+        selected ? "bg-raised" : "hover:bg-raised/50"
+      } ${dim ? "text-muted" : ""}`}
     >
-      <td className={`num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 leading-none font-bold ${dense ? "text-body" : "text-title"}`}>
+      <td className={`num w-9 pr-1.5 text-right align-middle lg:w-10 lg:pr-2 leading-none font-bold ${dense ? "text-body" : "text-title"} ${r.dropZone ? "text-danger" : ""}`}>
         <span className="inline-flex items-baseline justify-end gap-0.5">
           <PositionMove move={move} />
           {out ? <span className="text-small text-muted">—</span> : r.position}
+          {r.dropZone && <span className="sr-only"> (in the drop zone)</span>}
         </span>
       </td>
       <th scope="row" className="pl-1 text-left font-normal">
@@ -203,51 +272,70 @@ const Row = memo(function Row({
           aria-keyshortcuts="ArrowUp ArrowDown J K Home End"
           data-num={r.num}
           tabIndex={focusable ? 0 : -1}
+          title={r.team ? `${r.name} · ${r.team}` : r.name}
           // Name starts with the visible text (code + chip) so voice control can target it.
-          aria-label={`${r.code}${chip ? ` ${chip}` : ""}, ${r.name}, ${r.team}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
-          className={`flex items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 ${rowH != null ? "h-full min-h-0" : "min-h-11 lg:min-h-8"}`}
+          aria-label={`${r.code}${chip ? ` ${chip}` : ""}${qOut ? `, out in ${qOut}` : ""}, ${r.name}, ${r.team}${fav ? ", favourite" : ""}${r.fastestLap && race ? ", fastest lap" : ""}, ${out ? (r.retired ? "retired" : "stopped") : `P${r.position}`}`}
+          className={`flex min-w-0 items-center gap-1.5 rounded-chip pr-0 text-left lg:gap-2 lg:pr-1 ${rowH != null ? "h-full min-h-0" : "min-h-11 lg:min-h-8"}`}
         >
           <TeamBar colour={r.teamColour} className={dense ? "!h-4" : undefined} />
           <span className="font-semibold tracking-wide">{r.code}</span>
+          {fav && (
+            <span aria-hidden="true" className="-ml-0.5 text-[0.75rem] leading-none text-text">
+              ★
+            </span>
+          )}
           {/* One status chip, most important first, so the driver column stays narrow. */}
-          {chip && (
+          {chip ? (
             <Chip tone={out ? "danger" : r.inPit ? "warn" : "muted"} title={chip === "OUT" ? "Out lap" : undefined}>
               {chip}
             </Chip>
-          )}
+          ) : qOut ? (
+            <Chip tone="muted" title={`Knocked out in ${qOut}`}>
+              {qOut}
+            </Chip>
+          ) : r.fastestLap && race ? (
+            <span title="Fastest lap" className="inline-flex items-center gap-0.5 rounded-chip border border-sector-purple px-1 text-micro font-bold leading-4 text-sector-purple">
+              <span aria-hidden="true" className="text-[0.625rem]">
+                <Diamond />
+              </span>
+              FL
+            </span>
+          ) : null}
+          {r.team && <span className={`min-w-0 truncate text-small text-faint ${compact ? "hidden" : COL.team}`}>{r.team}</span>}
         </button>
       </th>
       <td className="num pr-2 text-right">
-        <Interval row={r} />
+        <GapCell row={r} mode={main} kind={kind} />
       </td>
-      <td className={`num pr-2 text-right ${c(COL.gap)}`}>
-        {out || (!r.gap.leader && formatGap(r.gap) === "—") ? (
-          <span className="text-faint">—</span>
-        ) : (
-          <span className={r.gap.leader ? "text-muted" : ""}>{formatGap(r.gap, { leaderLabel: leaderLap(r) })}</span>
-        )}
+      {race && (
+        <td className={`num pr-1 text-right text-small ${c(COL.gained)}`}>
+          <Gained row={r} />
+        </td>
+      )}
+      <td className={`num pr-2 text-right ${c(COL.second)}`}>
+        <GapCell row={r} mode={main === "interval" ? "leader" : "interval"} kind={kind} quiet />
       </td>
       <td className="pr-2 text-right">
-        {out ? (
-          // A retired car's last lap is history: no sector colour, row colour (muted).
-          <StaleTime value={r.lastLap.value} />
+        {dim ? (
+          // A retired or knocked-out car's time is history: no colour, row colour (muted).
+          <StaleTime value={time.value} />
         ) : (
-          <Flash value={r.lastLap.value}>
+          <Flash value={time.value}>
             {/* Yellow on ~19 of 20 last laps carries no signal: only purple/green are marked. */}
-            <MarkedTime value={r.lastLap.value} mark={r.lastLap.mark === "yellow" ? "none" : r.lastLap.mark} />
+            <MarkedTime value={time.value} mark={time.mark === "yellow" ? "none" : time.mark} />
           </Flash>
         )}
       </td>
-      <td className={`pr-2 text-right ${c(COL.best)}`}>
-        {out && r.bestLap.mark !== "purple" ? (
-          <StaleTime value={r.bestLap.value} />
+      <td className={`pr-2 text-right ${c(COL.time2)}`}>
+        {dim && time2.mark !== "purple" ? (
+          <StaleTime value={time2.value} />
         ) : (
-          <MarkedTime value={r.bestLap.value} mark={r.bestLap.mark} />
+          <MarkedTime value={time2.value} mark={time2.mark === "yellow" ? "none" : time2.mark} />
         )}
       </td>
       {r.sectors.map((s, i) => (
         <td key={i} className={`pr-2 text-right text-body ${c(COL.sectors)}`}>
-          {out ? <StaleTime value={s.value} /> : <MarkedTime value={s.value} mark={s.mark} sector />}
+          {dim ? <StaleTime value={s.value} /> : <MarkedTime value={s.value} mark={s.mark} sector />}
         </td>
       ))}
       <td className="pr-2 @min-[560px]:pl-2">
@@ -259,17 +347,22 @@ const Row = memo(function Row({
           </span>
         </span>
       </td>
-      <td className={`num pr-1 text-right text-muted ${c(COL.pits)}`}>{r.pits}</td>
+      {race && <td className={`num pr-1 text-right text-muted ${c(COL.pits)}`}>{r.pits}</td>}
     </tr>
   );
 });
 
-function Interval({ row: r }: { row: TowerRow }) {
+/** Interval to the car ahead, or gap to the leader (the fastest lap away from a race). */
+function GapCell({ row: r, mode, kind, quiet = false }: { row: TowerRow; mode: GapMode; kind: SessionKind; quiet?: boolean }) {
+  const race = kind === "race";
   if (r.retired || r.stopped) return <span className="text-faint">—</span>;
-  if (r.position === 1 || r.interval.leader) return <span className="text-muted">Leader</span>;
-  const text = formatGap(r.interval);
+  const g = mode === "interval" ? r.interval : r.gap;
+  if (r.position === 1 || g.leader) {
+    return <span className="text-muted">{race ? (mode === "leader" ? leaderLap(r) : "Leader") : "Fastest"}</span>;
+  }
+  const text = formatGap(g);
   if (text === "—") return <span className="text-faint">—</span>;
-  if (r.battle) {
+  if (mode === "interval" && r.battle && !quiet) {
     return (
       <span
         title="Within one second of the car ahead"
@@ -283,7 +376,41 @@ function Interval({ row: r }: { row: TowerRow }) {
       </span>
     );
   }
-  return <span>{text}</span>;
+  return <span className={quiet ? "text-muted" : undefined}>{text}</span>;
+}
+
+/** Places gained (green ▲) or lost (red ▼) since the start. */
+function Gained({ row: r }: { row: TowerRow }) {
+  if (r.gained == null || r.retired || r.stopped) return <span className="text-faint">—</span>;
+  if (r.gained === 0) {
+    return (
+      <span className="text-faint" title={`Started P${r.grid}`}>
+        =<span className="sr-only"> same as the start</span>
+      </span>
+    );
+  }
+  const up = r.gained > 0;
+  return (
+    <span className={`font-semibold ${up ? "text-ok" : "text-danger"}`} title={`Started P${r.grid}`}>
+      <span aria-hidden="true" className="text-[0.625rem]">
+        {up ? "▲" : "▼"}
+      </span>
+      {Math.abs(r.gained)}
+      <span className="sr-only"> {up ? "gained" : "lost"} since the start</span>
+    </span>
+  );
+}
+
+function QualiBar({ q, cars }: { q: QualiPart; cars: number }) {
+  const through = q.cutoff;
+  return (
+    <p data-fit-reserve className="flex flex-wrap items-baseline gap-x-3 px-1 pb-1 text-small">
+      <span className="rounded-chip bg-raised px-2 font-bold text-text">{q.label}</span>
+      <span className="text-muted">
+        {cars} cars{through != null ? ` · top ${through} go through` : " · fight for pole"}
+      </span>
+    </p>
+  );
 }
 
 function PositionMove({ move }: { move: number }) {
@@ -323,91 +450,14 @@ function Flash({ value, children }: { value: string; children: React.ReactNode }
   );
 }
 
-/**
- * Tracks position changes and keeps the arrow for a few seconds. A new snapshot
- * (`generation`: reconnect or replay seek) replaces the running order wholesale, so it
- * resets the baseline instead of reporting every car as having gained or lost places.
- */
-/**
- * When the running order changes, rows slide from where they were to where they are (FLIP)
- * instead of teleporting. Skipped on a fresh snapshot (seek, source switch) and under
- * reduced motion.
- */
-function useRowGlide(table: React.RefObject<HTMLTableElement | null>, rows: TowerRow[], generation: number) {
-  const tops = useRef(new Map<string, number>());
-  const gen = useRef(generation);
-  useLayoutEffect(() => {
-    const body = table.current?.tBodies[0];
-    if (!body) return;
-    const fresh = gen.current !== generation;
-    gen.current = generation;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const next = new Map<string, number>();
-    for (const tr of Array.from(body.rows)) {
-      const id = tr.dataset.row;
-      if (!id) continue;
-      const top = tr.offsetTop;
-      next.set(id, top);
-      const was = tops.current.get(id);
-      if (!fresh && !reduce && was != null && was !== top) {
-        tr.animate([{ transform: `translateY(${was - top}px)` }, { transform: "translateY(0)" }], {
-          duration: 420,
-          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-        });
-      }
-    }
-    tops.current = next;
-  }, [table, rows, generation]);
-}
-
-function usePositionMoves(rows: TowerRow[], generation: number): Record<string, number> {
-  const last = useRef<Record<string, number>>({});
-  const lastGen = useRef(generation);
-  const [moves, setMoves] = useState<Record<string, { d: number; at: number }>>({});
-  useEffect(() => {
-    if (lastGen.current !== generation) {
-      lastGen.current = generation;
-      last.current = Object.fromEntries(rows.map((r) => [r.num, r.position]));
-      setMoves({});
-      return;
-    }
-    const now = Date.now();
-    const next: Record<string, { d: number; at: number }> = {};
-    let changed = false;
-    for (const r of rows) {
-      const before = last.current[r.num];
-      // 99 = no position yet (towerRows' fallback): the first real one is not a move.
-      if (before != null && before !== 99 && r.position !== 99 && before !== r.position && !r.retired) {
-        next[r.num] = { d: before - r.position, at: now };
-        changed = true;
-      }
-      last.current[r.num] = r.position;
-    }
-    if (changed) {
-      setMoves((m) => ({ ...m, ...next }));
-    }
-  }, [rows, generation]);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const cutoff = Date.now() - 5000;
-      setMoves((m) => {
-        const kept = Object.fromEntries(Object.entries(m).filter(([, v]) => v.at > cutoff));
-        return Object.keys(kept).length === Object.keys(m).length ? m : kept;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return useMemo(() => Object.fromEntries(Object.entries(moves).map(([k, v]) => [k, v.d])), [moves]);
-}
-
-function Legend({ compact, fit }: { compact: boolean; fit: boolean }) {
+function Legend({ compact, fit, kind, quali }: { compact: boolean; fit: boolean; kind: SessionKind; quali: QualiPart | null }) {
   return (
     <p data-fit-reserve className={`mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-muted ${fit ? "!mt-1 !flex-nowrap overflow-hidden whitespace-nowrap !text-micro" : ""}`}>
       <span>
         <span className="text-sector-purple">
           <Diamond /> purple
         </span>{" "}
-        fastest overall
+        fastest
       </span>
       <span>
         <span className="text-sector-green">▲ green</span> personal best
@@ -416,9 +466,16 @@ function Legend({ compact, fit }: { compact: boolean; fit: boolean }) {
       <span className={compact ? "hidden" : "hidden @min-[790px]:inline"}>
         <span className="text-sector-yellow">yellow</span> slower sector
       </span>
-      <span className={fit ? "hidden" : undefined}>
-        <span className="text-warn">⇢</span> within 1 s of car ahead
-      </span>
+      {quali?.cutoff != null && (
+        <span>
+          <span className="text-danger">▬</span> drop zone
+        </span>
+      )}
+      {kind === "race" && (
+        <span className={fit ? "hidden" : undefined}>
+          <span className="text-warn">⇢</span> within 1 s of car ahead
+        </span>
+      )}
       <Link href="/driver" className="-my-3 ml-auto inline-flex min-h-11 items-center underline underline-offset-4 hover:text-text lg:my-0 lg:min-h-0">
         All drivers
       </Link>

@@ -225,14 +225,35 @@ export function buildScene(p: ArtParams, w: number, h: number): Scene {
 // Drawing (accepts any Canvas 2D context)
 // ---------------------------------------------------------------------------
 
-const TONES = ["255,162,77", "255,238,222", "190,92,62"] as const;
+/** Line colours ("r,g,b") from the theme; on a light page lines darken instead of glow. */
+export interface ArtPalette {
+  tones: [string, string, string];
+  comet: string;
+  light: boolean;
+}
+
+export const DEFAULT_PALETTE: ArtPalette = { tones: ["225,6,0", "239,101,101", "130,8,7"], comet: "240,135,132", light: false };
+
+/** Read the palette from the theme's CSS variables on <html> (falls back to the default). */
+export function readPalette(el: HTMLElement): ArtPalette {
+  const css = getComputedStyle(el);
+  const v = (name: string, d: string) => css.getPropertyValue(name).trim() || d;
+  const [a, b, c] = DEFAULT_PALETTE.tones;
+  return {
+    tones: [v("--art-0", a), v("--art-1", b), v("--art-2", c)],
+    comet: v("--art-comet", DEFAULT_PALETTE.comet),
+    light: el.dataset.theme === "light",
+  };
+}
+
 /** Tapered alpha for the four quarters of a line. */
 const TAPER = [0.35, 1, 1, 0.35];
 
-/** Draw lines [from, to) additively. `alpha` scales the whole piece (0–1). */
-export function drawLines(ctx: CanvasRenderingContext2D, scene: Scene, from: number, to: number, alpha: number) {
+/** Draw lines [from, to) additively (multiplied on a light page). `alpha` scales the whole piece (0–1). */
+export function drawLines(ctx: CanvasRenderingContext2D, scene: Scene, from: number, to: number, alpha: number, palette: ArtPalette = DEFAULT_PALETTE) {
+  const TONES = palette.tones;
   ctx.save();
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation = palette.light ? "multiply" : "lighter";
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (let i = from; i < Math.min(to, scene.lines.length); i++) {

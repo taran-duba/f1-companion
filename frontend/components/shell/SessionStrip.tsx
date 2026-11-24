@@ -10,10 +10,10 @@ import type { TimingState } from "@/lib/types";
 // Green is the normal state: outline only, so the filled pills stand out.
 const TONE_PILL: Record<string, string> = {
   green: "border border-flag-green/70 text-flag-green",
-  yellow: "bg-flag-yellow text-bg",
-  sc: "bg-flag-yellow text-bg",
-  vsc: "bg-flag-yellow text-bg",
-  red: "bg-flag-red text-bg",
+  yellow: "bg-flag-yellow text-ink",
+  sc: "bg-flag-yellow text-ink",
+  vsc: "bg-flag-yellow text-ink",
+  red: "bg-flag-red text-ink",
   chequered: "bg-text text-bg",
   unknown: "border border-line-control text-muted",
 };

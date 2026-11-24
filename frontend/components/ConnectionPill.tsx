@@ -61,7 +61,8 @@ export const TONE_CLASS: Record<Tone, string> = {
   ok: "text-ok border-ok/60",
   warn: "text-warn border-warn/60",
   danger: "text-danger border-danger/60",
-  accent: "text-accent border-accent/60",
+  // A replay is a neutral state, not an alert: the accent can be red in some themes.
+  accent: "text-text border-line-control",
 };
 
 /** One pill with the connection state, for places where a plain status is enough. */

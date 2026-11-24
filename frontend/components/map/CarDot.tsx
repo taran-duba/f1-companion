@@ -57,7 +57,7 @@ export const CarDot = memo(function CarDot({
             border: `${hollow ? 2.5 : 2}px solid ${hollow ? car.colour : "var(--color-bg)"}`,
             opacity: hollow && !selected ? 0.6 : 1,
             boxShadow: selected
-              ? "0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent)"
+              ? "0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-select)"
               : hollow
                 ? "0 0 0 1.5px var(--color-bg)"
                 : undefined,
@@ -85,7 +85,7 @@ export const CarLabel = memo(function CarLabel({
     <div className={ANCHOR} style={anchorStyle(car)}>
       <span
         className={`num absolute whitespace-nowrap rounded-chip px-1 text-micro font-semibold ${
-          selected ? "bg-accent text-bg" : hollow ? "bg-bg/85 text-faint" : "bg-bg/85 text-muted"
+          selected ? "bg-select text-bg" : hollow ? "bg-bg/85 text-faint" : "bg-bg/85 text-muted"
         }`}
         style={labelStyle(side, dotSize(selected) / 2 + 3)}
       >

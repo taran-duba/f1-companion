@@ -135,6 +135,7 @@ class Director:
             self.rc(t, "DRS ENABLED", "Drs", Status="ENABLED")
         if not self.events:
             return
+        race.radio.on_leader_lap(t, laps, self.rain_on_lap)
         if laps == self.yellow_lap:
             self.later(t + 25, self._yellow_on)
         if laps == self.dnf_lap:
@@ -182,6 +183,7 @@ class Director:
         turn = tr.corner_at(car.retire_s)
         self.rc(t, f"DOUBLE YELLOW IN TRACK SECTOR {sec}", "Flag", Flag="DOUBLE YELLOW", Scope="Sector", Sector=sec)
         self.track_status("2", "Yellow")
+        race.radio.on_crash(t, car)
         self.later(t + 3, lambda t2: self.rc(t2, f"{self.car_label(car)} STOPPED AT TURN {turn}", "CarEvent",
                                              RacingNumber=car.num))
 
@@ -190,6 +192,7 @@ class Director:
             race.deploy_sc(t2)
             self.track_status("4", "SCDeployed")
             self.rc(t2, "SAFETY CAR DEPLOYED", "SafetyCar", Status="DEPLOYED", Mode="SAFETY CAR")
+            race.radio.on_safety_car(t2)
             if race.drs_enabled:
                 race.drs_enabled = False
                 self.rc(t2, "DRS DISABLED", "Drs", Status="DISABLED")
@@ -214,6 +217,7 @@ class Director:
         race.vsc = True
         self.track_status("6", "VSCDeployed")
         self.rc(t, "VIRTUAL SAFETY CAR DEPLOYED", "SafetyCar", Status="DEPLOYED", Mode="VIRTUAL SAFETY CAR")
+        race.radio.on_vsc(t)
         was_drs = race.drs_enabled
         race.drs_enabled = False
 
