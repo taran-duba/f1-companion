@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 Companion</title>
+<meta name="description" content="A self-hosted race-day second screen: live timing, per-driver telemetry, a traced track map and race control, streamed from a Python backend to a Next.js dashboard over server-sent events.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="F1 Companion">
+<meta property="og:description" content="Your race. Every detail. Live. A self-hosted F1 second screen built with Python, FastAPI, SSE and Next.js.">
+<meta property="og:image" content="assets/og.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Barlow:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="preload" as="image" href="assets/app-safety-car-1440.webp" imagesrcset="assets/app-safety-car-1440.webp 1440w, assets/app-safety-car-2880.webp 2880w" imagesizes="(min-width: 1024px) 62vw, 100vw">
+</head>
+<body>
+<a class="skip" href="#lap">Skip to the features</a>
+
+<header class="top">
+  <a class="brand" href="#top" aria-label="F1 Companion, back to top">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M2 16V2h14v4H6v2.5h8v4H6V16z" fill="currentColor"/></svg>
+    <span>F1 Companion</span>
+  </a>
+  <nav aria-label="Page">
+    <a href="#t6">How it works</a>
+    <a href="#t7">Demo</a>
+    <a class="ext" href="https://github.com/taran-duba/f1-companion">GitHub<span aria-hidden="true"> ↗</span></a>
+  </nav>
+  <div class="lapbar" aria-hidden="true">
+    <svg class="lapbar-trace" preserveAspectRatio="none"></svg>
+    <span class="lapbar-cursor"></span>
+    <span class="lapbar-read"></span>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title">Your race.<br>Every detail.<br>Live.</h1>
+      <p class="lede">F1 Companion is a race-day second screen I built and run myself. Timing tower, per-driver telemetry, a track map and race control come off F1's live timing feed and stream into the browser. When there's no race on, it replays a recording, a past session or a synthetic demo race.</p>
+      <div class="actions">
+        <a class="btn" href="https://github.com/taran-duba/f1-companion">View the code on GitHub</a>
+        <a class="link" href="#t7"><span class="t">Watch the demo</span><span aria-hidden="true">↓</span></a>
+      </div>
+      <p class="stackline">Python · FastAPI · server-sent events · Next.js · MIT license</p>
+    </div>
+    <figure class="hero-shot">
+      <picture>
+        <source media="(max-width: 640px)" srcset="assets/phone.webp" width="780" height="1400">
+        <img src="assets/app-safety-car-1440.webp" srcset="assets/app-safety-car-1440.webp 1440w, assets/app-safety-car-2880.webp 2880w" sizes="(min-width: 1024px) 62vw, 100vw" width="1440" height="900" alt="The F1 Companion dashboard during a safety car: a yellow hazard band across the top, the timing tower with 20 cars, a telemetry panel showing 157 km/h in third gear, and a track map with every car in team colour." fetchpriority="high">
+      </picture>
+      <figcaption><span class="cap-wide">Lap 22 of the bundled demo race, safety car deployed.</span><span class="cap-phone">The phone layout, lap 18 of the bundled demo race.</span> Drivers and teams are fictional.</figcaption>
+    </figure>
+  </section>
+
+  <section class="strip" aria-labelledby="strip-title">
+    <div class="strip-head">
+      <h2 id="strip-title">This page is one lap</h2>
+      <p class="strip-meta"><span>MAR</span><span>Lap 18</span><span>1:23.859</span><span>5,011 m</span><span>Demo race, synthetic</span></p>
+    </div>
+    <p class="strip-note">Speed, throttle and brake for one lap, taken from the app's own trace endpoint. Each corner is a section below. Pick one to jump there.</p>
+    <div class="strip-plot">
+      <svg class="strip-svg" role="img" aria-label="Speed trace for one lap: from 308 km/h down to 86 km/h at the slowest corner, T5, with throttle and brake channels underneath."></svg>
+      <ol class="strip-corners"></ol>
+    </div>
+  </section>
+
+  <div class="lap" id="lap">
+    <aside class="spine" aria-hidden="true">
+      <svg class="spine-svg"></svg>
+      <div class="readout">
+        <span class="ro-turn">Start</span>
+        <span class="ro-dist">0 m</span>
+        <span class="ro-speed"><b>308</b> km/h</span>
+        <span class="ro-gear">Gear 8</span>
+        <span class="ro-bars"><i class="thr"></i><i class="brk"></i></span>
+        <svg class="ro-map" viewBox="-40 -40 1080 712"><path class="ro-track"/><circle class="ro-dot" r="44"/></svg>
+      </div>
+    </aside>
+
+    <section class="turn split" id="t1" data-corner="0" data-short="Timing" aria-labelledby="t1-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t1-h">Live timing and standings</h2>
+        <p>Twenty cars with interval or gap to the leader, last lap, tyre and age, and places gained since the start. Purple and green mark fastest and personal-best laps, with a glyph as well as a colour. Cars within a second of each other get a battle marker.</p>
+        <p>In qualifying the tower switches to Q1, Q2 and Q3, with a cut line and the drop zone.</p>
+      </div>
+      <figure class="shot tall">
+        <img src="assets/panel-tower.webp" width="456" height="671" loading="lazy" alt="The timing tower: positions 1 to 20 with team colour bars, intervals, gained or lost places, last lap times and tyre compounds. ARA holds the fastest lap.">
+      </figure>
+    </section>
+
+    <section class="turn wide" id="t2" data-corner="1" data-short="Telemetry" aria-labelledby="t2-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t2-h">Per-driver telemetry</h2>
+        <p>Follow any car for speed, gear, RPM, throttle and brake, with a rolling 30-second chart. Driver pages add lap-time history, a sector table, tyre stints and speed traces of one lap against another.</p>
+      </div>
+      <div class="pair">
+        <figure class="shot tall">
+          <img src="assets/panel-telemetry.webp" width="456" height="671" loading="lazy" alt="The telemetry panel for MAR: 177 km/h in fourth gear, full throttle, and a 30-second speed chart with throttle and brake bands.">
+        </figure>
+        <figure class="shot">
+          <img src="assets/driver-page.webp" width="1440" height="720" loading="lazy" alt="The driver page for MAR: tyre, pit stops, gap and best lap across the top, a lap-time chart, and a table of sector times per lap.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="turn split" id="t3" data-corner="2" data-short="Track map" aria-labelledby="t3-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t3-h">A track map traced by the cars</h2>
+        <p>No circuit geometry ships with the app. It draws the track from car positions once a car completes a clean lap, then marks sectors 1 to 3 and the start/finish line. Every car moves in its team colour, and cars in the pits or out of the race show as hollow rings.</p>
+        <p>The small map in the margin is that same traced outline, following your place on this page.</p>
+      </div>
+      <figure class="shot tall">
+        <img src="assets/panel-map.webp" width="456" height="671" loading="lazy" alt="The track map: a circuit outline in three sector colours with labelled car dots, the start/finish line, and a legend.">
+      </figure>
+    </section>
+
+    <section class="turn split flip" id="t4" data-corner="3" data-short="Race control" aria-labelledby="t4-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t4-h">Race control, as it's sent</h2>
+        <p>Flags, safety cars, penalties and deleted lap times arrive as the FIA sends them. Alerts can be set to off, favourites only or everyone. When the track status changes, the session header turns yellow or red, so you notice it from across the room.</p>
+      </div>
+      <figure class="feed">
+        <figcaption>Race control, demo race, laps 22 to 35</figcaption>
+        <ol>
+          <li><span class="lapno">L22</span><span class="msg">Double yellow in track sector 16</span></li>
+          <li><span class="lapno">L22</span><span class="msg">Car 3 (HAL) stopped at turn 8</span></li>
+          <li class="flag"><span class="lapno">L22</span><span class="msg">Safety car deployed</span></li>
+          <li><span class="lapno">L22</span><span class="msg">Lapped cars will not be allowed to overtake</span></li>
+          <li><span class="lapno">L23</span><span class="msg">Car 3 (HAL) retired, noted by the stewards</span></li>
+          <li><span class="lapno">L25</span><span class="msg">Safety car in this lap</span></li>
+          <li><span class="lapno">L31</span><span class="msg">Car 17 (OKA) time 1:24.437 deleted, track limits at turn 10</span></li>
+          <li class="pen"><span class="lapno">L35</span><span class="msg">FIA stewards: 5 second time penalty for car 17 (OKA), track limits</span></li>
+        </ol>
+      </figure>
+    </section>
+
+    <section class="turn wide" id="t5" data-corner="4" data-short="Replay" aria-labelledby="t5-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t5-h">Replay and past sessions</h2>
+        <p>The slowest corner on the lap, which suits it. Replay anything at 0.5× to 30×, pause, scrub, or jump straight to the safety car. Past sessions from 2018 onwards load through FastF1. Turn on recording during a live session and it's saved as JSON Lines, ready to replay.</p>
+      </div>
+      <figure class="shot dock">
+        <img src="assets/replay-dock.webp" width="1400" height="88" loading="lazy" alt="The playback dock: pause button, race clock 0:31:20 of 1:17:41, a lap scrubber with the safety car period hatched in yellow, and speed buttons from 0.5× to 30×.">
+      </figure>
+      <figure class="shot side">
+        <img src="assets/panel-source.webp" width="416" height="900" loading="lazy" alt="The source panel: live or replay, the demo race in use, recordings, and a FastF1 form for year, event and session.">
+      </figure>
+    </section>
+
+    <section class="turn arch" id="t6" data-corner="5" data-short="How it works" aria-labelledby="t6-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t6-h">How it works</h2>
+        <p>One Python process owns the feed. Sources are swappable, and nothing downstream knows which one is running. The browser gets a full snapshot, then small patches.</p>
+      </div>
+      <figure class="flow" aria-label="Architecture: data sources feed a Python backend, which serves FastAPI server-sent events to a Next.js frontend.">
+        <ol class="stages">
+          <li class="stage">
+            <h3>Data sources</h3>
+            <ul>
+              <li>F1 live timing <span>SignalR Core</span></li>
+              <li>Recordings <span>.jsonl.gz</span></li>
+              <li>Past sessions <span>FastF1</span></li>
+              <li>Demo race <span>generated</span></li>
+            </ul>
+          </li>
+          <li class="stage">
+            <h3>Python backend</h3>
+            <ul>
+              <li>Decode <code>.z</code> topics <span>base64 raw-deflate</span></li>
+              <li>Deep merge <span>index-keyed lists</span></li>
+              <li>Derive lap history, traces, circuit outline</li>
+              <li>Recorder tap <span>JSON Lines</span></li>
+            </ul>
+          </li>
+          <li class="stage">
+            <h3>FastAPI + SSE</h3>
+            <ul>
+              <li><code>GET /api/stream</code></li>
+              <li>Snapshot first, on every connect</li>
+              <li>Patches coalesced <span>every 200 ms</span></li>
+              <li>Status events</li>
+            </ul>
+          </li>
+          <li class="stage">
+            <h3>Next.js frontend</h3>
+            <ul>
+              <li>Reconnecting <code>EventSource</code></li>
+              <li>Same merge rules, in TypeScript</li>
+              <li>Tower, telemetry, map, alerts</li>
+              <li>Themes, favourites, TV delay</li>
+            </ul>
+          </li>
+        </ol>
+      </figure>
+      <div class="notes">
+        <p><b>When the connection drops.</b> Reconnects back off exponentially with jitter. A socket that goes 30 s without a frame is recycled, and every reconnect starts again from a fresh snapshot rather than trusting stale patches.</p>
+        <p><b>How it's tested.</b> pytest covers the decoder, the merge, replay timing on a fake clock, reconnecting against a fake SignalR server, and an end-to-end run of the real server reading its own SSE stream. Vitest covers the TypeScript merge and the stream wrapper. Playwright scripts check every page at 390 and 1440 px.</p>
+      </div>
+    </section>
+
+    <section class="turn demo" id="t7" data-corner="6" data-short="Demo" aria-labelledby="t7-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t7-h">Demo</h2>
+        <p>There is no hosted version. The backend keeps a long-lived connection to F1, and F1's feed is for personal use only. So here is the real app playing the bundled demo race at 5×: a car stops at turn 8, double yellows, then the safety car.</p>
+      </div>
+      <figure class="video">
+        <video controls muted playsinline preload="none" poster="assets/demo-poster.webp" width="1280" height="800">
+          <source src="assets/demo-race.mp4" type="video/mp4">
+        </video>
+        <figcaption>26 seconds, no sound. Recorded from the app running locally on the synthetic demo race.</figcaption>
+      </figure>
+    </section>
+
+    <section class="turn setup" id="t8" data-corner="7" data-short="Setup" aria-labelledby="t8-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t8-h">Run it yourself</h2>
+        <p>The demo race needs no network and no account. You'll need Python 3.11+ and Node 20+.</p>
+      </div>
+      <div class="steps">
+        <div class="code">
+          <p class="code-h">Install</p>
+          <pre><code>git clone https://github.com/taran-duba/f1-companion
+cd f1-companion
+python3 -m venv .venv
+.venv/bin/pip install -r backend/requirements.txt
+cd frontend &amp;&amp; npm install</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+        <div class="code">
+          <p class="code-h">Terminal 1: backend, on the demo race</p>
+          <pre><code>cd backend &amp;&amp; ../.venv/bin/python -m f1live serve</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+        <div class="code">
+          <p class="code-h">Terminal 2: dashboard</p>
+          <pre><code>cd frontend &amp;&amp; npm run dev</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+        <p class="after">Open <code>localhost:3000</code>. Space plays and pauses, ← and → jump 10 seconds. To go live, run the backend with <code>F1_SOURCE=live</code> or pick Live timing from the source menu.</p>
+      </div>
+    </section>
+
+    <section class="turn creds" id="t9" data-corner="8" data-short="F1 TV" aria-labelledby="t9-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t9-h">What needs an F1 TV account</h2>
+        <p>Bring your own credentials. The app never tries to get a token for you, and nothing is hosted.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">Which features work with each data source</caption>
+          <thead>
+            <tr><th scope="col">Feature</th><th scope="col">Demo and recordings</th><th scope="col">Live, no account</th><th scope="col">Live, F1 TV token</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Timing tower and standings</th><td class="y" data-h="Demo and recordings">Works</td><td class="y" data-h="Live, no account">Works</td><td class="y" data-h="Live, F1 TV token">Works</td></tr>
+            <tr><th scope="row">Race control, session, weather</th><td class="y" data-h="Demo and recordings">Works</td><td class="y" data-h="Live, no account">Works</td><td class="y" data-h="Live, F1 TV token">Works</td></tr>
+            <tr><th scope="row">Car telemetry</th><td class="y" data-h="Demo and recordings">Works</td><td class="n" data-h="Live, no account">Needs token</td><td class="u" data-h="Live, F1 TV token">Works, untested*</td></tr>
+            <tr><th scope="row">Track map and car positions</th><td class="y" data-h="Demo and recordings">Works</td><td class="n" data-h="Live, no account">Needs token</td><td class="u" data-h="Live, F1 TV token">Works, untested*</td></tr>
+          </tbody>
+        </table>
+        <p class="fn">* Telemetry and positions come from <code>CarData.z</code> and <code>Position.z</code>, which F1 only sends with a subscription token. The token path is written but untested, because no subscription was available while building. Past sessions through FastF1 need an F1 TV login (<code>F1_USERNAME</code> and <code>F1_PASSWORD</code>).</p>
+      </div>
+      <div class="limits">
+        <h3>Known limitations</h3>
+        <ul>
+          <li>The map appears after a car completes a clean lap, because it's traced, not bundled.</li>
+          <li>One user and one active source. Switching source changes it for every open browser.</li>
+          <li>No authentication on the API. It binds to <code>127.0.0.1</code> unless you say otherwise.</li>
+          <li>The demo can't reproduce everything, such as qualifying or red-flag restarts. Those paths are covered by unit tests only.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="turn stack" id="t10" data-corner="9" data-short="Stack" aria-labelledby="t10-h">
+      <div class="turn-text">
+        <p class="tag"></p>
+        <h2 id="t10-h">Built with</h2>
+      </div>
+      <dl class="stack-list">
+        <div><dt>Python 3.11+</dt><dd>Ingest, decoding, state store, the demo race generator</dd></div>
+        <div><dt>FastAPI and uvicorn</dt><dd>REST endpoints and the SSE stream</dd></div>
+        <div><dt>websockets, httpx</dt><dd>SignalR Core client and negotiate</dd></div>
+        <div><dt>FastF1</dt><dd>Past sessions, converted into the live message format</dd></div>
+        <div><dt>Next.js 16, React 19</dt><dd>The dashboard, App Router</dd></div>
+        <div><dt>Tailwind CSS 4, TypeScript</dt><dd>Themeable tokens with contrast checks</dd></div>
+        <div><dt>pytest, Vitest, Playwright</dt><dd>Unit, end-to-end and layout checks</dd></div>
+      </dl>
+    </section>
+  </div>
+</main>
+
+<footer class="finish" aria-labelledby="finish-h">
+  <div class="chequer" aria-hidden="true"></div>
+  <div class="finish-inner">
+    <div>
+      <h2 id="finish-h">Lap complete <span>1:23.859</span></h2>
+      <p>F1 Companion is a self-hosted second screen for race day: live timing, telemetry, a traced track map and race control, from a Python backend to a Next.js dashboard. Built by Taran Duba.</p>
+      <a class="btn" href="https://github.com/taran-duba/f1-companion">taran-duba/f1-companion on GitHub</a>
+    </div>
+    <p class="legal">Unofficial fan project. Not affiliated with, endorsed by or connected to Formula 1, the FIA or any team. F1 and related marks belong to their owners. The demo race, its drivers and teams are generated. MIT license.</p>
+  </div>
+</footer>
+
+<script src="lap-data.js"></script>
+<script src="lap.js"></script>
+</body>
+</html>
